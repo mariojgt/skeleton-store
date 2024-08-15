@@ -3,10 +3,14 @@
 namespace Skeleton\Store\Controllers\Backend\Product;
 
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 use Skeleton\Store\Models\Product;
 use Skeleton\Store\Models\Category;
 use App\Http\Controllers\Controller;
+use Mariojgt\Magnifier\Models\Media;
 use Mariojgt\Builder\Enums\FieldTypes;
+use Skeleton\Store\Resource\ProductResource;
+use Skeleton\Store\Resource\CategoryResource;
 use Mariojgt\SkeletonAdmin\Enums\PermissionEnum;
 
 class ProductController extends Controller
@@ -120,6 +124,87 @@ class ProductController extends Controller
                     'index'  => PermissionEnum::ReadPermission->value,
                 ],
             ]),
+            'custom_edit_route' => '/' . config('skeleton.route_prefix') . '/edit/product/',
         ]);
+    }
+
+    public function edit(Request $request, Product $product)
+    {
+        $breadcrumb = [
+            [
+                'label' => 'Product',
+                'url'   => route('admin.store.product.index'),
+            ],
+            [
+                'label' => 'Edit',
+            ]
+        ];
+
+        $dynamicCategorySearch = [
+            'label'     => 'Category',
+            'key'       => 'category_id',
+            'sortable'  => false,
+            'canCreate' => true,
+            'canEdit'   => true,
+            'nullable'  => true,
+            'type'      => 'model_search',
+            'endpoint'  => route('admin.api.generic.table'),
+            'columns' => [
+                [
+                    'key'       => 'id',
+                    'sortable'  => false
+                ],
+                [
+                    'key'       => 'name',
+                    'sortable'  => true,
+                ],
+            ],
+            'model'        => encrypt(Category::class),
+            'singleSearch' => true,
+        ];
+
+        return Inertia::render('Vendor/skeleton-store/product/edit', [
+            'breadcrumb'            => $breadcrumb,
+            'product'               => new ProductResource($product),
+            'image_search_endpoint' => route('admin.api.media.search'),
+            'dynamicCategorySearch' => $dynamicCategorySearch,
+            'selected_category'     => new CategoryResource($product->category)
+        ]);
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        // Validate the request
+        $data = $request->validate([
+            'name'          => 'required',
+            'slug'          => 'required',
+            'category_id'   => 'required',
+            'product_image' => 'required',
+            'description'   => 'required',
+            'price'         => 'required',
+        ]);
+
+        $product->name        = $data['name'];
+        $product->slug        = $data['slug'];
+        $product->category_id = $data['category_id'];
+        $product->description = $data['description'];
+        $product->price       = $data['price'];
+        $product->save();
+
+        // Get all the ids form the $data['course_image']
+        $ids = array_column($data['product_image'], 'id');
+        // Delete all associated media
+        $product->media()->delete();
+        // Attach new media
+        $media = Media::whereIn('id', $ids)->get();
+        foreach ($media as $mediaItem) {
+            $product->media()->create([
+                'media_id'   => $mediaItem->id,
+                'model_id'   => $product->id,
+                'model_type' => Product::class,
+            ]);
+        }
+
+        return redirect()->route('admin.store.product.index');
     }
 }

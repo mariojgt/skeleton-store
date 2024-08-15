@@ -16,5 +16,7 @@ Route::group([
 
     Route::controller(ProductController::class)->group(function () {
         Route::get('/store/product', 'index')->name('admin.store.product.index');
+        Route::get('/edit/product/{product}', 'edit')->name('admin.store.product.edit');
+        Route::patch('/update/product/{product}', 'update')->name('admin.store.product.update');
     });
 });

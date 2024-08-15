@@ -44,13 +44,13 @@ class Republish extends Command
         // First we move the resources where we keep the css and js files
         $this->moveFileOrFolder(
             resource_path('vendor/SkeletonAdmin/js/backend/Pages/Vendor/skeleton-store'),
-            __DIR__ . '/../../Publish/Resource/pageFronted',
+            __DIR__ . '/../../Publish/Resource/pageBackend',
             $bar
         );
 
         $this->moveFileOrFolder(
             resource_path('vendor/SkeletonAdmin/js/frontend/Pages/Vendor/skeleton-store'),
-            __DIR__ . '/../../Publish/Resource/pageBackend',
+            __DIR__ . '/../../Publish/Resource/pageFrontend',
             $bar
         );
 
