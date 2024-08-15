@@ -1,0 +1,24 @@
+<?php
+
+namespace Skeleton\Store\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Mariojgt\SkeletonAdmin\Models\Admin;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Product extends BaseMasterModel
+{
+    use HasFactory;
+
+    protected $fillable = ['name', 'description', 'price', 'file_path', 'category_id'];
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+}
