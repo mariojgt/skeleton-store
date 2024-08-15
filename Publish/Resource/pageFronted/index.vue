@@ -140,7 +140,7 @@
             <div class="card col-span-1 row-span-3 shadow-lg xl:col-span-2 bg-base-100">
                 <div class="card-body">
                     <h2 class="my-4 text-4xl font-bold card-title">
-                        Welcome to the frontend
+                        Welcome to the backend
                     </h2>
                     <div class="mb-4 space-x-2 card-actions">
                         <div class="badge badge-ghost">Colors</div>
@@ -384,7 +384,7 @@
 import { router } from "@inertiajs/vue3";
 import { onMounted } from "vue";
 import { Link } from "@inertiajs/vue3";
-import Layout from "@frontend_layout/App.vue";
+import Layout from "@backend_layout/App.vue";
 
 let email = $ref("");
 let password = $ref("");

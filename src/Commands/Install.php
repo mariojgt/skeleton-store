@@ -5,6 +5,7 @@ namespace Skeleton\Store\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Skeleton\Store\Database\Seeders\StoreSeeder;
+use Skeleton\Store\Database\Seeders\NavigationSeeder;
 
 class Install extends Command
 {
@@ -45,6 +46,10 @@ class Install extends Command
         // Run the navigation seeder
         Artisan::call('db:seed', [
             '--class' => StoreSeeder::class,
+        ]);
+
+        Artisan::call('db:seed', [
+            '--class' => NavigationSeeder::class,
         ]);
 
         // Publish the media library package

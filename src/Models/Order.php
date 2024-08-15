@@ -2,9 +2,8 @@
 
 namespace Skeleton\Store\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Skeleton\Store\Enums\OrderStatus;
 use Mariojgt\SkeletonAdmin\Models\User;
-use Mariojgt\SkeletonAdmin\Models\Admin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Order extends BaseMasterModel
@@ -13,6 +12,9 @@ class Order extends BaseMasterModel
 
     protected $fillable = ['user_id', 'total', 'status'];
 
+    protected $casts = [
+        'status' => OrderStatus::class,
+    ];
     public function user()
     {
         return $this->belongsTo(User::class);

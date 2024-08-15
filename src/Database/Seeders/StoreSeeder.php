@@ -7,6 +7,7 @@ use Skeleton\Store\Models\Order;
 use Skeleton\Store\Models\Product;
 use Skeleton\Store\Models\Category;
 use Skeleton\Store\Models\OrderItem;
+use Skeleton\Store\Enums\OrderStatus;
 use Mariojgt\SkeletonAdmin\Models\User;
 
 class StoreSeeder extends Seeder
@@ -30,8 +31,22 @@ class StoreSeeder extends Seeder
 
         // Create some products
         $products = [
-            ['name' => 'E-book: Laravel Basics', 'description' => 'Learn the basics of Laravel', 'price' => 19.99, 'file_path' => 'ebooks/laravel-basics.pdf', 'category_id' => 1],
-            ['name' => 'Video Course: Advanced PHP', 'description' => 'Master advanced PHP techniques', 'price' => 49.99, 'file_path' => 'courses/advanced-php.mp4', 'category_id' => 2],
+            [
+                'name'        => 'E-book: Laravel Basics',
+                'slug'        => 'laravel-basics',
+                'description' => 'Learn the basics of Laravel',
+                'price'       => 19.99,
+                'file_path'   => 'ebooks/laravel-basics.pdf',
+                'category_id' => 1
+            ],
+            [
+                'name'        => 'Video Course: Advanced PHP',
+                'slug'        => 'advanced-php',
+                'description' => 'Master advanced PHP techniques',
+                'price'       => 49.99,
+                'file_path'   => 'courses/advanced-php.mp4',
+                'category_id' => 2
+            ],
         ];
 
         foreach ($products as $product) {
@@ -50,7 +65,7 @@ class StoreSeeder extends Seeder
         $order = Order::create([
             'user_id' => $user->id,
             'total' => 69.98,
-            'status' => 'completed',
+            'status' => OrderStatus::completed->value,
         ]);
 
         // Create order items

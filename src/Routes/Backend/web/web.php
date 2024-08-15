@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Skeleton\Store\Controllers\Backend\BackendHomeController;
+use Skeleton\Store\Controllers\Backend\Product\ProductController;
+use Skeleton\Store\Controllers\Backend\ProductCategory\ProductCategoryController;
 
 // Standard
 Route::group([
@@ -9,7 +10,11 @@ Route::group([
     'prefix'     => 'admin',
 ], function () {
     // Add your normal routes in here
-    Route::controller(BackendHomeController::class)->group(function () {
-        Route::get('/skeleton-store/backend', 'index')->name('home');
+    Route::controller(ProductCategoryController::class)->group(function () {
+        Route::get('/store/product-category', 'index')->name('admin.store.product-category.index');
+    });
+
+    Route::controller(ProductController::class)->group(function () {
+        Route::get('/store/product', 'index')->name('admin.store.product.index');
     });
 });
