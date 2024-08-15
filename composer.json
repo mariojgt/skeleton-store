@@ -1,0 +1,38 @@
+{
+    "name": "skeleton-store/skeleton-store",
+    "description": "Laravel Ecomece extenstion for skeleton admin.",
+    "keywords": [
+        "laravel"
+    ],
+    "type": "laravel",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "mario",
+            "email": "mariojgt2@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "mariojgt/skeleton-admin": "^1.0.2|@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Skeleton\\Store\\": "src"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php artisan route:list"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Skeleton\\Store\\SkeletonStoreServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
