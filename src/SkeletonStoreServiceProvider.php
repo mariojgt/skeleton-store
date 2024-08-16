@@ -49,7 +49,8 @@ class SkeletonStoreServiceProvider extends ServiceProvider
      * Inject the commands
      * @return void
      */
-    public function loadCommands() {
+    public function loadCommands()
+    {
         // Autoload all the commands from the folder Commands
         if ($this->app->runningInConsole()) {
             $availableCommandsPath =  __DIR__ . '/Commands';

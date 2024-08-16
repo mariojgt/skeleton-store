@@ -10,6 +10,6 @@ Route::group([
 ], function () {
     // Add your normal routes in here
     Route::controller(FrontendHomeController::class)->group(function () {
-        Route::get('/skeleton-store/frontend', 'index')->name('home');
+        Route::get('/skeleton-store/frontend', 'index')->name('store');
     });
 });

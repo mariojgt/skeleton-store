@@ -11,7 +11,7 @@ class Category extends BaseMasterModel
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'svg'];
 
     public function products()
     {
