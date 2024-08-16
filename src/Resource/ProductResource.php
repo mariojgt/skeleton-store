@@ -17,11 +17,10 @@ class ProductResource extends JsonResource
      */
     public function toArray($request)
     {
-        if ($this->media?->first()) {
-            $media = [new MediaResource($this->media->first()->media)];
-        } else {
-            $media = null;
-        }
+        $media = $this->media?->map(function ($item) {
+            return new MediaResource($item->media);
+        }) ?? null;
+
         return [
             'id'          => $this->id,
             'name'        => $this->name,
@@ -33,6 +32,8 @@ class ProductResource extends JsonResource
             'created_at'  => $this->created_at,
             'updated_at'  => $this->updated_at,
             'media'       => $media,
+            'type'        => $this->type,
+            'price_type'  => $this->price_type,
         ];
     }
 }

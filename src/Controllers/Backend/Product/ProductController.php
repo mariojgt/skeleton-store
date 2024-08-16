@@ -4,10 +4,12 @@ namespace Skeleton\Store\Controllers\Backend\Product;
 
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Skeleton\Store\Enums\PriceType;
 use Skeleton\Store\Models\Product;
 use Skeleton\Store\Models\Category;
 use App\Http\Controllers\Controller;
 use Mariojgt\Magnifier\Models\Media;
+use Skeleton\Store\Enums\ProductType;
 use Mariojgt\Builder\Enums\FieldTypes;
 use Skeleton\Store\Resource\ProductResource;
 use Skeleton\Store\Resource\CategoryResource;
@@ -168,7 +170,9 @@ class ProductController extends Controller
             'product'               => new ProductResource($product),
             'image_search_endpoint' => route('admin.api.media.search'),
             'dynamicCategorySearch' => $dynamicCategorySearch,
-            'selected_category'     => new CategoryResource($product->category)
+            'selected_category'     => new CategoryResource($product->category),
+            'type_enum'             => ProductType::array(),
+            'price_type_enum'       => PriceType::array(),
         ]);
     }
 
@@ -181,14 +185,18 @@ class ProductController extends Controller
             'category_id'   => 'required',
             'product_image' => 'required',
             'description'   => 'required',
-            'price'         => 'required',
+            'price'         => 'required | numeric',
+            'type'          => 'required',
+            'price_type'    => 'required',
         ]);
 
         $product->name        = $data['name'];
         $product->slug        = $data['slug'];
-        $product->category_id = $data['category_id'];
+        $product->category_id = is_array($data['category_id']) ? $data['category_id'][0]['id'] : $data['category_id'];
         $product->description = $data['description'];
         $product->price       = $data['price'];
+        $product->type        = $data['type'];
+        $product->price_type  = $data['price_type'];
         $product->save();
 
         // Get all the ids form the $data['course_image']

@@ -1,29 +1,36 @@
 <template>
     <Layout>
         <n-card
-            title="User Profile"
+            title="Product"
             :class="'col-span-1 row-span-3 shadow-lg xl:col-span-2 bg-base-300'"
         >
             <TabGroup>
                 <TabList class="flex space-x-1 rounded-xl p-1 tabs">
                     <Tab v-slot="{ selected }">
                         <a
-                            class="tab tab-lg tab-bordered"
-                            :class="selected ? 'tab-active' : ''"
+                            class="tab tab-lg tab-bordered rounded-md bg-neutral"
+                            :class="selected ? 'bg-primary text-black' : ''"
                             >Deatils</a
                         >
                     </Tab>
                     <Tab v-slot="{ selected }">
                         <a
-                            class="tab tab-lg tab-bordered"
-                            :class="selected ? 'tab-active' : ''"
-                            >To add</a
+                            class="tab tab-lg tab-bordered rounded-md bg-neutral"
+                            :class="selected ? 'bg-primary text-black' : ''"
+                            >Media and Description</a
+                        >
+                    </Tab>
+                    <Tab v-slot="{ selected }">
+                        <a
+                            class="tab tab-lg tab-bordered rounded-md bg-neutral"
+                            :class="selected ? 'bg-primary text-black' : ''"
+                            >Settings</a
                         >
                     </Tab>
                 </TabList>
-                <TabPanels class="mt-2">
-                    <TabPanel>
-                        <form @submit.prevent="submitForm">
+                <form @submit.prevent="submitForm">
+                    <TabPanels class="mt-2">
+                        <TabPanel>
                             <input-field
                                 v-model="form.name"
                                 label="Name"
@@ -36,30 +43,12 @@
                                 type="text"
                                 placeholder="slug"
                             />
-                            <label class="form-control">
-                                <div class="label">
-                                    <span class="label-text">Description</span>
-                                </div>
-                                    <textarea
-                                    class="textarea textarea-bordered w-full"
-                                    placeholder="Product Description"
-                                    v-model="form.description"
-                                ></textarea>
-                            </label>
                             <input-field
                                 v-model="form.price"
                                 label="Price"
-                                type="number"
+                                type="text"
                                 placeholder="slug"
                             />
-                            <Image
-                                v-model="form.product_image"
-                                label="image"
-                                placeholder="search"
-                                :load-data="product.data.media"
-                                :endpoint="props.image_search_endpoint"
-                            />
-
                             <TextMultipleSelector
                                 v-model="form.category_id"
                                 :label="'Category'"
@@ -72,22 +61,51 @@
                                 :load-data="selected_category.data"
                                 :endpoint="props.dynamicCategorySearch.endpoint"
                             />
-                            <div class="form-control pt-10">
-                                <submit name="update" @click="submitForm" />
-                            </div>
-                        </form>
-                    </TabPanel>
-                    <TabPanel> </TabPanel>
-                </TabPanels>
+                        </TabPanel>
+                        <TabPanel>
+                            <label class="form-control">
+                                <div class="label">
+                                    <span class="label-text">Description</span>
+                                </div>
+                                <textarea
+                                    class="textarea textarea-bordered w-full"
+                                    placeholder="Product Description"
+                                    v-model="form.description"
+                                ></textarea>
+                            </label>
+                            <Image
+                                v-model="form.product_image"
+                                label="image"
+                                placeholder="search"
+                                :load-data="product.data.media"
+                                :endpoint="props.image_search_endpoint"
+                            />
+                        </TabPanel>
+                        <TabPanel>
+                            <SelectInput
+                                v-model="form.price_type"
+                                :options="props.price_type_enum"
+                                label="Price type"
+                            />
+                            <SelectInput
+                                v-model="form.type"
+                                :options="props.type_enum"
+                                label="Type"
+                            />
+                        </TabPanel>
+                    </TabPanels>
+                </form>
             </TabGroup>
+            <div class="form-control pt-10">
+                <submit name="Update" @click="submitForm" />
+            </div>
         </n-card>
     </Layout>
 </template>
 
 <script setup>
-import { router, useForm } from "@inertiajs/vue3";
+import { useForm } from "@inertiajs/vue3";
 import { onMounted } from "vue";
-import { Link } from "@inertiajs/vue3";
 import Layout from "@backend_layout/App.vue";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/vue";
 import {
@@ -118,6 +136,14 @@ const props = defineProps({
         type: Object,
         default: () => ({}),
     },
+    type_enum: {
+        type: Object,
+        default: () => ({}),
+    },
+    price_type_enum: {
+        type: Object,
+        default: () => ({}),
+    },
 });
 
 onMounted(() => {});
@@ -127,9 +153,11 @@ const form = useForm({
     slug: props.product.data.slug,
     description: props.product.data.description,
     price: props.product.data.price,
-    product_image: props.product.data.product_image,
+    product_image: props.product.data.media,
     media: props.product.data.media,
     category_id: props.product.data.category_id,
+    type: props.product.data.type,
+    price_type: props.product.data.price_type,
 });
 
 // SubmitTheForm
