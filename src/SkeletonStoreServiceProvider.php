@@ -40,8 +40,8 @@ class SkeletonStoreServiceProvider extends ServiceProvider
     public function publish()
     {
         $this->publishes([
-            __DIR__ . '/../Publish/Resource/pageBackend' => resource_path('vendor/SkeletonAdmin/js/backend/Pages/Vendor/skeleton-store'),
-            __DIR__ . '/../Publish/Resource/pageFronted' => resource_path('vendor/SkeletonAdmin/js/frontend/Pages/Vendor/skeleton-store'),
+            __DIR__ . '/../Publish/Resource/pageBackend' => resource_path('vendor/SkeletonAdmin/js/backend/Pages/BackEnd/Vendor/skeleton-store'),
+            __DIR__ . '/../Publish/Resource/pageFrontend' => resource_path('vendor/SkeletonAdmin/js/frontend/Pages/BackEnd/Vendor/skeleton-store'),
         ]);
     }
 

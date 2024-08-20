@@ -59,7 +59,7 @@ class ProductCategoryController extends Controller
             ],
         ];
 
-        return Inertia::render('Vendor/skeleton-store/productCategory/index', [
+        return Inertia::render('BackEnd/Vendor/skeleton-store/productCategory/index', [
             'title'      => 'Category | Index',
             'table_name' => 'Category',
             'breadcrumb' => $breadcrumb,

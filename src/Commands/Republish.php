@@ -41,15 +41,14 @@ class Republish extends Command
         $bar = $this->output->createProgressBar(2);
         $bar->start();
 
-        // First we move the resources where we keep the css and js files
         $this->moveFileOrFolder(
-            resource_path('vendor/SkeletonAdmin/js/backend/Pages/Vendor/skeleton-store'),
+            resource_path('vendor/SkeletonAdmin/js/backend/Pages/BackEnd/Vendor/skeleton-store'),
             __DIR__ . '/../../Publish/Resource/pageBackend',
             $bar
         );
 
         $this->moveFileOrFolder(
-            resource_path('vendor/SkeletonAdmin/js/frontend/Pages/Vendor/skeleton-store'),
+            resource_path('vendor/SkeletonAdmin/js/frontend/Pages/FrontEnd/Vendor/skeleton-store'),
             __DIR__ . '/../../Publish/Resource/pageFrontend',
             $bar
         );

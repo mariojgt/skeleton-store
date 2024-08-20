@@ -18,7 +18,7 @@
 import Layout from "@backend_layout/App.vue";
 
 // Import the table component from the builder api
-import Table from "../../../../../../../Builder/Table/Table.vue";
+import Table from "../../../../../../../../Builder/Table/Table.vue";
 
 const props = defineProps({
     endpoint: {

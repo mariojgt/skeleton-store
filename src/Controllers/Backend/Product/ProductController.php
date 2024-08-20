@@ -99,7 +99,7 @@ class ProductController extends Controller
             ]
         ];
 
-        return Inertia::render('Vendor/skeleton-store/product/index', [
+        return Inertia::render('BackEnd/Vendor/skeleton-store/product/index', [
             'title'      => 'Product | 📦',
             'table_name' => 'Product',
             'breadcrumb' => $breadcrumb,
@@ -165,7 +165,7 @@ class ProductController extends Controller
             'singleSearch' => true,
         ];
 
-        return Inertia::render('Vendor/skeleton-store/product/edit', [
+        return Inertia::render('BackEnd/Vendor/skeleton-store/product/edit', [
             'breadcrumb'            => $breadcrumb,
             'product'               => new ProductResource($product),
             'image_search_endpoint' => route('admin.api.media.search'),
