@@ -4,6 +4,7 @@ namespace Skeleton\Store\Models;
 
 use Skeleton\Store\Enums\PriceType;
 use Skeleton\Store\Enums\ProductType;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Product extends BaseMasterModel

@@ -3,9 +3,22 @@
 namespace Skeleton\Store;
 
 use Illuminate\Support\ServiceProvider;
+use Skeleton\Store\Events\UserSubscribedToPlan;
+use Skeleton\Store\Events\UserUnsubscribedToPlan;
+use Skeleton\Store\Listeners\SubscribeUserToPlan;
+use Skeleton\Store\Listeners\UnsubscribeUserToPlan;
 
 class SkeletonStoreServiceProvider extends ServiceProvider
 {
+    protected $listen = [
+        UserSubscribedToPlan::class => [
+            SubscribeUserToPlan::class,
+        ],
+        UserUnsubscribedToPlan::class => [
+            UnsubscribeUserToPlan::class,
+        ],
+    ];
+
     /**
      * Bootstrap the application services.
      *
@@ -13,6 +26,9 @@ class SkeletonStoreServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Register the event listeners
+        $this->registerEvents();
+
         // Load the commands
         $this->loadCommands();
 
@@ -59,6 +75,20 @@ class SkeletonStoreServiceProvider extends ServiceProvider
                 return 'Skeleton\Store\Commands\\' . basename($path, '.php');
             }, glob($availableCommandsPath . '/*.php'));
             $this->commands($commandClasses);
+        }
+    }
+
+     /**
+     * Register events and listeners
+     *
+     * @return void
+     */
+    protected function registerEvents()
+    {
+        foreach ($this->listen as $event => $listeners) {
+            foreach ($listeners as $listener) {
+                \Illuminate\Support\Facades\Event::listen($event, $listener);
+            }
         }
     }
 }
