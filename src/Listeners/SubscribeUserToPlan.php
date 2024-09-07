@@ -5,6 +5,7 @@ namespace Skeleton\Store\Listeners;
 use Skeleton\Store\Enums\DurationType;
 use Skeleton\Store\Enums\SubscriptionStatus;
 use Skeleton\Store\Events\UserSubscribedToPlan;
+use Mariojgt\SkeletonAdmin\Notifications\GenericNotification;
 
 class SubscribeUserToPlan
 {
@@ -39,5 +40,14 @@ class SubscribeUserToPlan
             'end_date'   => $endDate,
             'status'     => SubscriptionStatus::active->value,
         ]);
+
+        $user->notify(
+            new GenericNotification(
+                'Plan' . $plan->name . ' subscribed',
+                'success',
+                'You have successfully subscribed to the plan ' . $plan->name,
+                'icon'
+            )
+        );
     }
 }

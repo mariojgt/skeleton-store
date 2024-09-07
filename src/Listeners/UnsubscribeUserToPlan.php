@@ -6,6 +6,7 @@ use Skeleton\Store\Enums\DurationType;
 use Skeleton\Store\Enums\SubscriptionStatus;
 use Skeleton\Store\Events\UserSubscribedToPlan;
 use Skeleton\Store\Events\UserUnsubscribedToPlan;
+use Mariojgt\SkeletonAdmin\Notifications\GenericNotification;
 
 class UnsubscribeUserToPlan
 {
@@ -25,5 +26,14 @@ class UnsubscribeUserToPlan
         $user->subscriptions()->where('plan_id', $plan->id)->update([
             'status' => SubscriptionStatus::canceled->value,
         ]);
+
+        $user->notify(
+            new GenericNotification(
+                'Plan' . $plan->name . ' canceled',
+                'info',
+                'Your subscription to the plan ' . $plan->name . ' has been canceled',
+                'icon'
+            )
+        );
     }
 }
