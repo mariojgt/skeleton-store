@@ -23,6 +23,7 @@ class SubscriptionResource extends JsonResource
             'start_date'    => $this->start_date,
             'start_date_at' => $this->start_date->format('F j, Y'),
             'end_date'      => $this->end_date,
+            'end_date_at'   => $this->end_date->format('F j, Y'),
             'renovation_at' => $this->end_date->format('F j, Y'),
             'status'        => $this->status,
             'duration_left' => $this->durationLeft(),

@@ -19,6 +19,6 @@ class User extends SkeletonUser
 
     public function activeSubscription()
     {
-        return $this->subscriptions()->where('status', SubscriptionStatus::active)->first();
+        return $this->subscriptions()->where('status', SubscriptionStatus::active)->orderBy('end_date', 'desc')->first();
     }
 }

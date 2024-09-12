@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('subscription_id')->constrained()->onDelete('cascade');
+            $table->morphs('payable');
             $table->decimal('amount', 8, 2);
             $table->string('payment_method')->default(PaymentMethod::stripe->value);
             $table->string('status')->default(PaymentStatus::processing->value);

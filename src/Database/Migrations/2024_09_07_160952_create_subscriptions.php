@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('plan_id')->constrained()->onDelete('cascade');
             $table->timestamp('start_date');
             $table->timestamp('end_date');
+            $table->boolean('auto_renew')->default(true);
             $table->string('status')->default(SubscriptionStatus::active->value);
             $table->timestamps();
         });

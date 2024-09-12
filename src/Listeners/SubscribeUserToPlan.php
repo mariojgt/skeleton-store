@@ -2,6 +2,7 @@
 
 namespace Skeleton\Store\Listeners;
 
+use Skeleton\Store\Models\Payment;
 use Skeleton\Store\Enums\DurationType;
 use Skeleton\Store\Enums\SubscriptionStatus;
 use Skeleton\Store\Events\UserSubscribedToPlan;
@@ -20,6 +21,8 @@ class SubscribeUserToPlan
         // Access the user and plan from the event
         $user = $event->user;
         $plan = $event->plan;
+        $payment = $event->payment ?? [];
+        $autoRenew = $event->autoRenew;
 
         if ($plan->duration_type === DurationType::days) {
             $endDate = now()->addDays($plan->duration);
@@ -34,12 +37,26 @@ class SubscribeUserToPlan
         }
 
         // Subscribe the user to the plan
-        $user->subscriptions()->create([
+        $subscription = $user->subscriptions()->create([
             'plan_id'    => $plan->id,
             'start_date' => now(),
             'end_date'   => $endDate,
             'status'     => SubscriptionStatus::active->value,
+            'auto_renew' => $autoRenew,
         ]);
+
+
+        // Creating a new payment associated with the subscription
+        $payment = new Payment([
+            'user_id'        => $payment['user_id'],
+            'amount'         => $payment['amount'],
+            'payment_method' => $payment['payment_method'],
+            'status'         => $payment['status'],
+            'transaction_id' => $payment['transaction_id'],
+        ]);
+
+        // Save the payment using the polymorphic relationship
+        $subscription->payments()->save($payment);
 
         $user->notify(
             new GenericNotification(

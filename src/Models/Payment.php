@@ -29,4 +29,9 @@ class Payment extends BaseMasterModel
     {
         return $this->belongsTo(Subscription::class);
     }
+
+    public function payable()
+    {
+        return $this->morphTo();
+    }
 }

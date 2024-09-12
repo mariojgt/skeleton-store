@@ -13,13 +13,18 @@ class Subscription extends BaseMasterModel
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'plan_id', 'start_date', 'end_date', 'status'];
+    protected $fillable = ['user_id', 'plan_id', 'start_date', 'end_date', 'status', 'auto_renew'];
 
     protected $casts = [
         'status'       => SubscriptionStatus::class,
         'start_date'   => 'datetime',
         'end_date'     => 'datetime',
     ];
+
+    public function payments()
+    {
+        return $this->morphMany(Payment::class, 'payable');
+    }
 
     public function user()
     {
@@ -29,11 +34,6 @@ class Subscription extends BaseMasterModel
     public function plan()
     {
         return $this->belongsTo(Plan::class);
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
     }
 
     public function durationLeft()
