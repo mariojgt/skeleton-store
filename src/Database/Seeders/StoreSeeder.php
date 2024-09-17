@@ -9,6 +9,7 @@ use Skeleton\Store\Models\Category;
 use Skeleton\Store\Models\OrderItem;
 use Skeleton\Store\Enums\OrderStatus;
 use Mariojgt\SkeletonAdmin\Models\User;
+use Skeleton\Store\Models\StoreSetting;
 
 class StoreSeeder extends Seeder
 {
@@ -75,6 +76,20 @@ class StoreSeeder extends Seeder
                 'product_id' => $product->id,
                 'quantity' => 1,
                 'price' => $product->price,
+            ]);
+        }
+
+        // Create eh default store settings
+        $storeSettings = [
+            'store_currency' => 'GBP',
+            'store_currency_symbol' => '£',
+            'store_default_tax' => 20
+        ];
+
+        foreach ($storeSettings as $key => $value) {
+            StoreSetting::create([
+                'key' => $key,
+                'value' => $value,
             ]);
         }
     }
