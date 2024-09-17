@@ -19,6 +19,7 @@ class Subscription extends BaseMasterModel
         'status'       => SubscriptionStatus::class,
         'start_date'   => 'datetime',
         'end_date'     => 'datetime',
+        'auto_renew'   => 'boolean',
     ];
 
     public function payments()
