@@ -18,6 +18,7 @@ return new class extends Migration
             $table->boolean('auto_renew')->default(true);
             $table->string('status')->default(SubscriptionStatus::active->value);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

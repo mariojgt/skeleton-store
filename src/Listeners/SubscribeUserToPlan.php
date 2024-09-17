@@ -49,7 +49,9 @@ class SubscribeUserToPlan
         // Creating a new payment associated with the subscription
         $payment = new Payment([
             'user_id'        => $payment['user_id'],
-            'amount'         => $payment['amount'],
+            'total_amount'   => $payment['total_amount'],
+            'discount'       => $payment['discount'],
+            'tax'            => $payment['discount'],
             'payment_method' => $payment['payment_method'],
             'status'         => $payment['status'],
             'transaction_id' => $payment['transaction_id'],

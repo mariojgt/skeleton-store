@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Skeleton\Store\Controllers\Backend\Plans\PlansController;
 use Skeleton\Store\Controllers\Backend\Product\ProductController;
+use Skeleton\Store\Controllers\Backend\Settings\StoreSettingsController;
 use Skeleton\Store\Controllers\Backend\ProductCategory\ProductCategoryController;
 
 // Standard
@@ -23,5 +24,9 @@ Route::group([
 
     Route::controller(PlansController::class)->group(function () {
         Route::get('/store/plans', 'index')->name('admin.store.plans.index');
+    });
+
+    Route::controller(StoreSettingsController::class)->group(function () {
+        Route::get('/store/settings', 'index')->name('admin.store.settings.index');
     });
 });

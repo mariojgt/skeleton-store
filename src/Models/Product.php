@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Product extends BaseMasterModel
 {
     use HasFactory;
-
+    use SoftDeletes;
     protected $fillable = ['name', 'description', 'price', 'file_path', 'category_id'];
 
     protected $casts = [

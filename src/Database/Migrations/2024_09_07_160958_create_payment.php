@@ -14,7 +14,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->morphs('payable');
-            $table->decimal('amount', 8, 2);
+            $table->decimal('total_amount', 8, 2);
+            $table->decimal('discount', 8, 2)->default(0);
+            $table->decimal('tax', 8, 2)->default(0);
             $table->string('payment_method')->default(PaymentMethod::stripe->value);
             $table->string('status')->default(PaymentStatus::processing->value);
             $table->string('transaction_id')->nullable();

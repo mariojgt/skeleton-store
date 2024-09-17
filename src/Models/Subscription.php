@@ -8,10 +8,12 @@ use Skeleton\Store\Enums\PriceType;
 use Skeleton\Store\Enums\ProductType;
 use Skeleton\Store\Enums\SubscriptionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subscription extends BaseMasterModel
 {
     use HasFactory;
+    use softDeletes;
 
     protected $fillable = ['user_id', 'plan_id', 'start_date', 'end_date', 'status', 'auto_renew'];
 

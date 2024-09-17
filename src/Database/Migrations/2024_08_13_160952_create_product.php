@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('type')->nullable()->default(ProductType::digital->value);
             $table->string('price_type')->nullable()->default(PriceType::paid->value);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
