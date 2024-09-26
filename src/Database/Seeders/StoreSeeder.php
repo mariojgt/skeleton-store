@@ -55,18 +55,18 @@ class StoreSeeder extends Seeder
         }
 
         // Create a user using factory
-        $user = new User();
+        $user             = new User();
         $user->first_name = 'John Doe';
-        $user->last_name = 'Doe';
-        $user->email = 'johnTeste@teste.com';
-        $user->password = bcrypt('password');
+        $user->last_name  = 'Doe';
+        $user->email      = 'johnTeste@teste.com';
+        $user->password   = bcrypt('password');
         $user->save();
 
         // Create an order
         $order = Order::create([
             'user_id' => $user->id,
-            'total' => 69.98,
-            'status' => OrderStatus::completed->value,
+            'total'   => 69.98,
+            'status'  => OrderStatus::completed->value,
         ]);
 
         // Create order items
@@ -79,7 +79,7 @@ class StoreSeeder extends Seeder
             ]);
         }
 
-        // Create eh default store settings
+        // Create a default store settings
         $storeSettings = [
             'store_currency' => 'GBP',
             'store_currency_symbol' => '£',

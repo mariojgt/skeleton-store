@@ -41,6 +41,12 @@ class SkeletonStoreServiceProvider extends ServiceProvider
 
         // Load Migrations
         $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations');
+
+        // Load custom middleware
+        $this->app['router']->aliasMiddleware(
+            'subscription',
+            \Skeleton\Store\Middleware\HandleSubscription::class
+        );
     }
 
     /**
@@ -58,6 +64,7 @@ class SkeletonStoreServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../Publish/Resource/pageBackend' => resource_path('vendor/SkeletonAdmin/js/backend/Pages/BackEnd/Vendor/skeleton-store'),
             __DIR__ . '/../Publish/Resource/pageFrontend' => resource_path('vendor/SkeletonAdmin/js/frontend/Pages/BackEnd/Vendor/skeleton-store'),
+            __DIR__ . '/../Config' => config_path('skeletonStore')
         ]);
     }
 

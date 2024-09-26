@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('duration_type')->default(DurationType::months->value);
             $table->boolean('is_active')->default(true);
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->string('stripe_price_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
