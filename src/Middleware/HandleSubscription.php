@@ -35,7 +35,6 @@ class HandleSubscription
      */
     public function handle($request, Closure $next, $guard = 'web')
     {
-        // Handle Stripe subscription TODO: Move this to a job
         if ($request->session_id) {
             $stripe = new Stripe();
 
@@ -47,6 +46,7 @@ class HandleSubscription
             }
 
             $session = $stripe->stripe->checkout->sessions->retrieve($request->session_id);
+
             if ($session->payment_status === 'paid') {
                 $subscription = $stripe->stripe->subscriptions->retrieve($session->subscription);
                 $plan = Plan::where('stripe_price_id', $subscription->plan->id)->first();
@@ -70,7 +70,7 @@ class HandleSubscription
                     'status'         => PaymentStatus::processing->value,
                     'transaction_id' => $session->payment_intent,
                 ];
-                ProcessSubscription::dispatchSync($user, $plan, $payment, true);
+                ProcessSubscription::dispatchSync($user, $plan, $payment, true, $session->subscription);
                 return redirect()->route('home');
             }
         }

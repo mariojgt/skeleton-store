@@ -23,6 +23,7 @@ class SubscribeUserToPlan
         $plan = $event->plan;
         $payment = $event->payment ?? [];
         $autoRenew = $event->autoRenew;
+        $stripeId = $event->stripeSubscriptionId;
 
         if ($plan->duration_type === DurationType::days) {
             $endDate = now()->addDays($plan->duration);
@@ -43,6 +44,7 @@ class SubscribeUserToPlan
             'end_date'   => $endDate,
             'status'     => SubscriptionStatus::active->value,
             'auto_renew' => $autoRenew,
+            'stripe_subscription_id' => $stripeId,
         ]);
 
 

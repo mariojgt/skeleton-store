@@ -21,4 +21,9 @@ class User extends SkeletonUser
     {
         return $this->subscriptions()->where('status', SubscriptionStatus::active)->orderBy('end_date', 'desc')->first();
     }
+
+    public function stripeSessions()
+    {
+        return $this->hasMany(StripeSession::class);
+    }
 }

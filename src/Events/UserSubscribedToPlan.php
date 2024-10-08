@@ -18,11 +18,15 @@ class UserSubscribedToPlan
 
     public array $payment;
 
-    public function __construct(User $user, Plan $plan, array $payment = null, bool $autoRenew = true)
+    public string $stripeSubscriptionId;
+
+
+    public function __construct(User $user, Plan $plan, array $payment = null, bool $autoRenew = true, string $stripeSubscriptionId = null)
     {
         $this->user = $user;
         $this->plan = $plan;
         $this->payment = $payment;
         $this->autoRenew = $autoRenew;
+        $this->stripeSubscriptionId = $stripeSubscriptionId;
     }
 }

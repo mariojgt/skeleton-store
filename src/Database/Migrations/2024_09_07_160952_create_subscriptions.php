@@ -17,6 +17,7 @@ return new class extends Migration
             $table->timestamp('end_date');
             $table->boolean('auto_renew')->default(true);
             $table->string('status')->default(SubscriptionStatus::active->value);
+            $table->string('stripe_subscription_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
