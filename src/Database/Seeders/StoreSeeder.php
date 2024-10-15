@@ -64,19 +64,22 @@ class StoreSeeder extends Seeder
 
         // Create an order
         $order = Order::create([
-            'user_id' => $user->id,
-            'total'   => 69.98,
-            'status'  => OrderStatus::completed->value,
+            'user_id'      => $user->id,
+            'total_amount' => 69.98,
+            'status'       => OrderStatus::completed->value,
         ]);
 
         // Create order items
         foreach (Product::all() as $product) {
-            OrderItem::create([
+            $orderItem = new OrderItem([
                 'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => 1,
                 'price' => $product->price,
+                'quantity' => 1,
             ]);
+
+            // Associate the product (polymorphic relation) and save the order item
+            $orderItem->item()->associate($product);
+            $orderItem->save();
         }
 
         // Create a default store settings

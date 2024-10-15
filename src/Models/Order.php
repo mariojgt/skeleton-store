@@ -9,10 +9,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends BaseMasterModel
 {
-    use HasFactory;
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
-    protected $fillable = ['user_id', 'total', 'status'];
+    protected $fillable = ['user_id', 'total_amount', 'status'];
 
     protected $casts = [
         'status' => OrderStatus::class,
@@ -23,6 +22,7 @@ class Order extends BaseMasterModel
         return $this->belongsTo(User::class);
     }
 
+    // Define the relationship with OrderItems
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);

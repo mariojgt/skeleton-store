@@ -12,7 +12,7 @@ class Stripe
         $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret'));
     }
 
-    public function createSession($user, $priceId, $successUrl = null, $cancelUrl = null)
+    public function createSubscriptionSession($user, $priceId, $successUrl = null, $cancelUrl = null)
     {
         // Get the customer or create one in Stripe
         $customer = $user->stripe_id;
@@ -67,4 +67,16 @@ class Stripe
             'return_url' => $returnUrl ?? env('APP_URL') . '/account',
         ]);
     }
+
+    public function getSubscription($subscriptionId)
+    {
+        try {
+            // Retrieve the subscription details from Stripe
+            return $this->stripe->subscriptions->retrieve($subscriptionId);
+        } catch (\Exception $e) {
+            // Handle any errors (such as subscription not found)
+            return ['error' => $e->getMessage()];
+        }
+    }
+
 }

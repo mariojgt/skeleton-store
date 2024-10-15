@@ -22,5 +22,6 @@ Route::group([
 ], function () {
     Route::controller(StripeController::class)->group(function () {
         Route::post('/skeleton-store/payment/stripe', 'subscribe')->name('stripe.subscribe');
+        Route::post('/skeleton-store/payment/stripe/checkout', 'productCheckout')->name('stripe.product.checkout');
     });
 });
