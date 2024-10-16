@@ -38,6 +38,27 @@ class Stripe
         ]);
     }
 
+    public function createCheckoutSession($user, $lineItems, $successUrl = null, $cancelUrl = null)
+    {
+        $customer = $user->stripe_id;
+        if (empty($customer)) {
+            $customer = $this->stripe->customers->create([
+                'email' => $user->email,
+            ])->id;
+            $user->stripe_id = $customer;
+            $user->save();
+        }
+
+        return $this->stripe->checkout->sessions->create([
+            'customer' => $customer,
+            'payment_method_types' => ['card'],
+            'line_items' => $lineItems,
+            'mode' => 'payment',
+            'success_url' => $successUrl ?? env('APP_URL') . '/success',
+            'cancel_url' => $cancelUrl ?? env('APP_URL') . '/cancel',
+        ]);
+    }
+
     public function createPrice($price, $currency = 'gbp', $productName = 'Gold Plan', $interval = 'month', $intervalCount = 1)
     {
         // Convert price to cents
@@ -53,6 +74,28 @@ class Stripe
             'product_data' => ['name' => $productName],
         ]);
     }
+
+    public function createProduct($name, $imageUrl)
+    {
+        return $this->stripe->products->create([
+            'name' => $name,
+            'images' => [$imageUrl], // Array of image URLs
+        ]);
+    }
+
+    public function createOneTimePrice($price, $productId, $currency = 'gbp')
+    {
+        // Convert price to cents
+        $priceInCents = $price * 100;
+
+        // Create the price for a one-time product
+        return $this->stripe->prices->create([
+            'currency' => $currency,
+            'unit_amount' => $priceInCents,
+            'product' => $productId, // Use the provided product ID
+        ]);
+    }
+
 
     public function cancelSubscription($subscriptionId)
     {

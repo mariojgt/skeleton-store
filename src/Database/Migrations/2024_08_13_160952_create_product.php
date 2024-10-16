@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreign('category_id')->references('id')->on('categories');
             $table->string('type')->nullable()->default(ProductType::digital->value);
             $table->string('price_type')->nullable()->default(PriceType::paid->value);
+            $table->string('stripe_price_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
