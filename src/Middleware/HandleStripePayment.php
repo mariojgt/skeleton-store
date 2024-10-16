@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Skeleton\Store\Models\Plan;
 use Skeleton\Store\Models\User;
 use Skeleton\Store\Factory\Stripe;
+use Skeleton\Store\Jobs\OrderPaidJob;
 use Illuminate\Foundation\Application;
 use Skeleton\Store\Enums\PaymentMethod;
 use Skeleton\Store\Enums\PaymentStatus;
@@ -16,7 +17,7 @@ use Mariojgt\GameDev\Jobs\ProcessSubscription;
 /**
  * [This middleware will ensure 2 steps verification]
  */
-class HandleSubscription
+class HandleStripePayment
 {
     public function __construct(Application $app, Request $request)
     {
@@ -48,10 +49,7 @@ class HandleSubscription
             $session = $stripe->stripe->checkout->sessions->retrieve($request->session_id);
 
             if ($session->payment_status === 'paid') {
-                $subscription = $stripe->stripe->subscriptions->retrieve($session->subscription);
-                $plan = Plan::where('stripe_price_id', $subscription->plan->id)->first();
                 $user = User::find(auth()->user()->id);
-
                 // Save the session as processed (status: completed)
                 StripeSession::updateOrCreate(
                     ['session_id' => $request->session_id],
@@ -61,16 +59,24 @@ class HandleSubscription
                     ]
                 );
 
-                $payment = [
-                    'user_id'        => $user->id,
-                    'total_amount'   => $plan->price,
-                    'discount'       => 0,
-                    'tax'            => 0,
-                    'payment_method' => PaymentMethod::stripe->value,
-                    'status'         => PaymentStatus::processing->value,
-                    'transaction_id' => $session->payment_intent,
-                ];
-                ProcessSubscription::dispatchSync($user, $plan, $payment, true, $session->subscription);
+                // Check if is a subscription
+                if ($session->subscription) {
+                    $subscription = $stripe->stripe->subscriptions->retrieve($session->subscription);
+                    $plan = Plan::where('stripe_price_id', $subscription->plan->id)->first();
+
+                    $payment = [
+                        'user_id'        => $user->id,
+                        'total_amount'   => $plan->price,
+                        'discount'       => 0,
+                        'tax'            => 0,
+                        'payment_method' => PaymentMethod::stripe->value,
+                        'status'         => PaymentStatus::processing->value,
+                        'transaction_id' => $session->payment_intent,
+                    ];
+                    ProcessSubscription::dispatchSync($user, $plan, $payment, true, $session->subscription);
+                }
+                // Create the order
+                OrderPaidJob::dispatch($session->id);
                 return redirect()->route('home');
             }
         }

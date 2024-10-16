@@ -11,7 +11,7 @@ class Order extends BaseMasterModel
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['user_id', 'total_amount', 'status'];
+    protected $fillable = ['user_id', 'total_amount', 'status', 'stripe_session_id'];
 
     protected $casts = [
         'status' => OrderStatus::class,

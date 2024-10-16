@@ -2,6 +2,7 @@
 
 namespace Skeleton\Store\Models;
 
+use Skeleton\Store\Enums\OrderStatus;
 use Skeleton\Store\Enums\SubscriptionStatus;
 use Mariojgt\SkeletonAdmin\Models\User as SkeletonUser;
 
@@ -15,6 +16,16 @@ class User extends SkeletonUser
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function paidOrders()
+    {
+        return $this->orders()->where('status', OrderStatus::completed->value);
     }
 
     public function activeSubscription()

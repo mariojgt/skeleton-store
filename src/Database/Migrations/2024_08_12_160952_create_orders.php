@@ -15,6 +15,7 @@ return new class extends Migration
             $table->decimal('discount', 8, 2)->default(0);
             $table->decimal('tax', 8, 2)->default(0);
             $table->string('status');
+            $table->string('stripe_session_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

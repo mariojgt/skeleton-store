@@ -8,6 +8,8 @@ use Skeleton\Store\Models\Plan;
 use Skeleton\Store\Factory\Stripe;
 use App\Helpers\SkeletonStoreHelper;
 use App\Http\Controllers\Controller;
+use Skeleton\Store\Jobs\CreateOrderJob;
+use Skeleton\Store\DataStructure\ProductDetail;
 
 class StripeController extends Controller
 {
@@ -31,6 +33,19 @@ class StripeController extends Controller
             route(config('skeletonStore.payment_gateway.stripe.success_url')) .'?session_id={CHECKOUT_SESSION_ID}',
             route(config('skeletonStore.payment_gateway.stripe.cancel_url'))
         );
+
+        // Checkout items
+        $checkoutItems[] = new ProductDetail(
+            $plan->name,
+            $plan->price,
+            $plan,
+            1,
+            [$plan->thumbnail]
+        );
+
+        // Create the order
+        CreateOrderJob::dispatch($user, $checkoutItems, $session->id);
+
         return [
             'session' => $session->url,
         ];
@@ -49,18 +64,21 @@ class StripeController extends Controller
         $stripe = new Stripe();
         $products = $validatedData['products'];
         $lineItems = [];
-
+        $checkoutItems = [];
         foreach ($products as $product) {
             $checkoutItem = SkeletonStoreHelper::findProduct($product);
-            if (empty($checkoutItem['model']->stripe_price_id)) {
+            $checkoutItems[] = $checkoutItem;
+
+            if (empty($checkoutItem->model->stripe_price_id)) {
                 $stripeProduct = $stripe->createProduct($checkoutItem['name'], $checkoutItem['media_url']);
                 $paymentId = $stripe->createOneTimePrice($checkoutItem['amount'], $stripeProduct->id, 'gbp');
-                $checkoutItem['model']->stripe_price_id = $paymentId->id;
-                $checkoutItem['model']->save();
+                $checkoutItem->model->stripe_price_id = $paymentId->id;
+                $checkoutItem->model->save();
             }
-            $checkoutItem['model']->refresh();
+            $checkoutItem->model->refresh();
+
             $lineItems[] = [
-                'price' => $checkoutItem['model']->stripe_price_id,
+                'price' => $checkoutItem->model->stripe_price_id,
                 'quantity' => $product['quantity'],
             ];
         }
@@ -73,9 +91,11 @@ class StripeController extends Controller
             route(config('skeletonStore.payment_gateway.stripe.cancel_url'))
         );
 
+        // Create the order
+        CreateOrderJob::dispatch($user, $checkoutItems, $session->id);
+
         return [
             'session' => $session->url,
         ];
     }
-
 }

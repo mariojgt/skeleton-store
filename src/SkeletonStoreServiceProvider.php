@@ -45,7 +45,7 @@ class SkeletonStoreServiceProvider extends ServiceProvider
         // Load custom middleware
         $this->app['router']->aliasMiddleware(
             'subscription',
-            \Skeleton\Store\Middleware\HandleSubscription::class
+            \Skeleton\Store\Middleware\HandleStripePayment::class
         );
     }
 
