@@ -13,10 +13,11 @@ class Plan extends BaseMasterModel
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['name', 'description', 'price', 'duration', 'duration_type', 'is_active', 'product_id', 'stripe_price_id'];
+    protected $fillable = ['name', 'description', 'price', 'duration', 'duration_type', 'is_active', 'product_id', 'stripe_price_id', 'auto_renew'];
 
     protected $casts = [
-        'duration_type'       => DurationType::class
+        'duration_type'       => DurationType::class,
+        'auto_renew'          => 'boolean',
     ];
 
     public function subscriptions()

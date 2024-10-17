@@ -21,7 +21,7 @@ Route::group([
     'prefix' => config('skeleton.route_prefix_front'),
 ], function () {
     Route::controller(StripeController::class)->group(function () {
-        Route::post('/skeleton-store/payment/stripe', 'subscribe')->name('stripe.subscribe');
+        Route::post('/skeleton-store/payment/stripe', 'subscriptionCheckout')->name('stripe.subscribe');
         Route::post('/skeleton-store/payment/stripe/checkout', 'productCheckout')->name('stripe.product.checkout');
     });
 });

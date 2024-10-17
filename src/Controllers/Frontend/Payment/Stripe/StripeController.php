@@ -13,23 +13,38 @@ use Skeleton\Store\DataStructure\ProductDetail;
 
 class StripeController extends Controller
 {
-    public function subscribe(Request $request)
+    public function subscriptionCheckout(Request $request)
     {
+        $request->validate([
+          'plan_id' => 'required|integer|exists:plans,id',
+        ]);
+
         $stripe = new Stripe();
         $plan = Plan::findOrFail($request->plan_id);
 
         if (empty($plan->stripe_price_id)) {
-            $paymentId = $stripe->createPrice($plan->price, 'gbp', $plan->name, 'month', $plan->duration);
+            if ($plan->auto_renew) {
+                $paymentId = $stripe->createPrice($plan->price, 'gbp', $plan->name, 'month', $plan->duration);
+            } else {
+                $stripeProduct = $stripe->createProduct($plan->name, null, false, $plan->description);
+                $paymentId = $stripe->createOneTimePrice($plan->price, $stripeProduct->id, 'gbp');
+            }
             $plan->stripe_price_id = $paymentId->id;
             $plan->save();
             $plan->refresh();
         }
 
+        $lineItems[] = [
+            'price' => $plan->stripe_price_id,
+            'quantity' => 1,
+        ];
+
         // Get the user
         $user = auth()->user();
-        $session = $stripe->createSubscriptionSession(
+        $session = $stripe->createSession(
             $user,
-            $plan->stripe_price_id,
+            $lineItems,
+            $plan->auto_renew,
             route(config('skeletonStore.payment_gateway.stripe.success_url')) .'?session_id={CHECKOUT_SESSION_ID}',
             route(config('skeletonStore.payment_gateway.stripe.cancel_url'))
         );
@@ -40,7 +55,7 @@ class StripeController extends Controller
             $plan->price,
             $plan,
             1,
-            [$plan->thumbnail]
+            []
         );
 
         // Create the order
@@ -56,7 +71,7 @@ class StripeController extends Controller
         // Validate the incoming request
         $validatedData = $request->validate([
             'products' => 'required|array',
-            'products.*.id' => 'required|integer|exists:plans,id', // Check if plan exists
+            'products.*.id' => 'required|integer', // Check if plan exists
             'products.*.quantity' => 'required|integer|min:1', // Quantity must be a positive integer
             'products.*.type' => 'required|string|in:course', // Assuming 'type' can only be 'course'
         ]);
@@ -65,13 +80,14 @@ class StripeController extends Controller
         $products = $validatedData['products'];
         $lineItems = [];
         $checkoutItems = [];
+
         foreach ($products as $product) {
             $checkoutItem = SkeletonStoreHelper::findProduct($product);
             $checkoutItems[] = $checkoutItem;
 
             if (empty($checkoutItem->model->stripe_price_id)) {
-                $stripeProduct = $stripe->createProduct($checkoutItem['name'], $checkoutItem['media_url']);
-                $paymentId = $stripe->createOneTimePrice($checkoutItem['amount'], $stripeProduct->id, 'gbp');
+                $stripeProduct = $stripe->createProduct($checkoutItem->name, $checkoutItem->media_url);
+                $paymentId = $stripe->createOneTimePrice($checkoutItem->amount, $stripeProduct->id, 'gbp');
                 $checkoutItem->model->stripe_price_id = $paymentId->id;
                 $checkoutItem->model->save();
             }
@@ -84,9 +100,10 @@ class StripeController extends Controller
         }
 
         $user = auth()->user();
-        $session = $stripe->createCheckoutSession(
+        $session = $stripe->createSession(
             $user,
             $lineItems,
+            false,
             route(config('skeletonStore.payment_gateway.stripe.success_url')) .'?session_id={CHECKOUT_SESSION_ID}',
             route(config('skeletonStore.payment_gateway.stripe.cancel_url'))
         );

@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Skeleton\Store\Models\Plan;
 use Skeleton\Store\Models\User;
+use Skeleton\Store\Models\Order;
 use Skeleton\Store\Factory\Stripe;
 use Skeleton\Store\Jobs\OrderPaidJob;
 use Illuminate\Foundation\Application;
@@ -59,10 +60,23 @@ class HandleStripePayment
                     ]
                 );
 
+                // Check if the product is a one time payment or a subscription
+                $order = Order::where('stripe_session_id', $request->session_id)->first();
+                $orderItem = $order->orderItems->first()->item;
+
+                // Auto generate the invoice for the order if not already generated
+                if (empty($session->invoice)) {
+                    $stripe->createInvoiceAndMarkAsPaid($request->session_id, $order);
+                }
+
                 // Check if is a subscription
-                if ($session->subscription) {
-                    $subscription = $stripe->stripe->subscriptions->retrieve($session->subscription);
-                    $plan = Plan::where('stripe_price_id', $subscription->plan->id)->first();
+                if ($session->subscription || get_class($orderItem) === Plan::class) {
+                    if ($session->subscription) {
+                        $subscription = $stripe->stripe->subscriptions->retrieve($session->subscription);
+                        $plan = Plan::where('stripe_price_id', $subscription->plan->id)->first();
+                    } else {
+                        $plan = $orderItem;
+                    }
 
                     $payment = [
                         'user_id'        => $user->id,
@@ -73,8 +87,10 @@ class HandleStripePayment
                         'status'         => PaymentStatus::processing->value,
                         'transaction_id' => $session->payment_intent,
                     ];
-                    ProcessSubscription::dispatchSync($user, $plan, $payment, true, $session->subscription);
+
+                    ProcessSubscription::dispatchSync($user, $plan, $payment, $plan->auto_renew, $session->subscription ?? $session->id);
                 }
+
                 // Create the order
                 OrderPaidJob::dispatch($session->id);
                 return redirect()->route('home');

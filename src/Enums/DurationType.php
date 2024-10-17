@@ -10,4 +10,5 @@ enum DurationType: string
     case weeks = 'Weeks';
     case months = 'Months';
     case years = 'Years';
+    case lifetime = 'Lifetime';
 }

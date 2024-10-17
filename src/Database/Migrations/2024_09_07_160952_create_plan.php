@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->string('stripe_price_id')->nullable();
+            $table->boolean('auto_renew')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

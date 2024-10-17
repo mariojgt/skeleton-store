@@ -24,6 +24,7 @@ class PlansResource extends JsonResource
             'duration_type' => $this->duration_type,
             'is_active'     => $this->is_active,
             'product_id'    => $this->product_id,
+            'auto_renew'    => $this->auto_renew,
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
             'deleted_at'    => $this->deleted_at,

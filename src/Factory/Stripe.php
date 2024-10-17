@@ -12,33 +12,7 @@ class Stripe
         $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret'));
     }
 
-    public function createSubscriptionSession($user, $priceId, $successUrl = null, $cancelUrl = null)
-    {
-        // Get the customer or create one in Stripe
-        $customer = $user->stripe_id;
-        if (empty($customer)) {
-            $customer = $this->stripe->customers->create([
-                'email' => $user->email,
-            ])->id;
-            $user->stripe_id = $customer;
-            $user->save();
-        }
-        return $this->stripe->checkout->sessions->create([
-            'customer' => $customer,
-            'payment_method_types' => ['card'],
-            'line_items' => [
-                [
-                    'price' => $priceId,
-                    'quantity' => 1,
-                ],
-            ],
-            'mode' => 'subscription',
-            'success_url' => $successUrl ?? env('APP_URL') . '/success',
-            'cancel_url' => $cancelUrl ?? env('APP_URL') . '/cancel',
-        ]);
-    }
-
-    public function createCheckoutSession($user, $lineItems, $successUrl = null, $cancelUrl = null)
+    public function createSession($user, $lineItems, $autoRenew = true, $successUrl = null, $cancelUrl = null)
     {
         $customer = $user->stripe_id;
         if (empty($customer)) {
@@ -53,7 +27,7 @@ class Stripe
             'customer' => $customer,
             'payment_method_types' => ['card'],
             'line_items' => $lineItems,
-            'mode' => 'payment',
+            'mode' => $autoRenew ? 'subscription' : 'payment',
             'success_url' => $successUrl ?? env('APP_URL') . '/success',
             'cancel_url' => $cancelUrl ?? env('APP_URL') . '/cancel',
         ]);
@@ -75,13 +49,26 @@ class Stripe
         ]);
     }
 
-    public function createProduct($name, $imageUrl)
+    public function createProduct($name, $imageUrl = null, $isSubscription = false, $description = null)
     {
-        return $this->stripe->products->create([
+        $productData = [
             'name' => $name,
-            'images' => [$imageUrl], // Array of image URLs
-        ]);
+        ];
+
+        if (!empty($imageUrl)) {
+            $productData['images'] = [$imageUrl]; // Add images key only if $imageUrl is not empty
+        }
+
+        if ($isSubscription) {
+            $productData['type'] = 'service';
+        }
+        if ($description) {
+            $productData['description'] = $description;
+        }
+
+        return $this->stripe->products->create($productData);
     }
+
 
     public function createOneTimePrice($price, $productId, $currency = 'gbp')
     {
@@ -122,4 +109,50 @@ class Stripe
         }
     }
 
+    /**
+     * Create an invoice and mark it as paid based on the session ID.
+     *
+     * @param string $sessionId
+     * @return array
+     */
+    public function createInvoiceAndMarkAsPaid($sessionId, $order)
+    {
+        try {
+            // Retrieve the session using the session ID
+            $session = $this->stripe->checkout->sessions->retrieve($sessionId);
+
+            // Create an invoice for the customer
+            $invoice = $this->stripe->invoices->create([
+                'customer' => $session->customer,
+                'auto_advance' => false, // Set to false so we can finalize manually
+            ]);
+
+            // Create invoice items for each order item
+            foreach ($order->orderItems as $item) {
+                $this->stripe->invoiceItems->create([
+                    'customer' => $session->customer,
+                    'price' => $item->item->stripe_price_id,
+                    'quantity' => $item->quantity, // Make sure to include the quantity
+                    'invoice' => $invoice->id,
+                ]);
+            }
+
+            // Finalize the invoice
+            $finalizedInvoice = $this->stripe->invoices->finalizeInvoice($invoice->id);
+            // Mark the invoice as paid without charging
+            $paidInvoice = $this->stripe->invoices->update($finalizedInvoice->id, [
+                'paid' => true
+            ]);
+
+            // Return the finalized invoice URL
+            return [
+                'invoice_url' => $paidInvoice->hosted_invoice_url,
+                'invoice_id' => $paidInvoice->id,
+                'amount_paid' => $paidInvoice->amount_paid,
+            ];
+        } catch (\Exception $e) {
+            // Handle any errors that occur during the invoice creation process
+            return ['error' => $e->getMessage()];
+        }
+    }
 }
