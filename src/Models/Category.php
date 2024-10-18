@@ -13,7 +13,7 @@ class Category extends BaseMasterModel
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['name', 'slug', 'svg'];
+    protected $fillable = ['name', 'slug', 'svg', 'is_active'];
 
     public function products()
     {

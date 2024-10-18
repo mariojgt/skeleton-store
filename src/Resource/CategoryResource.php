@@ -2,6 +2,7 @@
 
 namespace Skeleton\Store\Resource;
 
+use Illuminate\Support\Facades\Cache;
 use Mariojgt\Magnifier\Resources\MediaResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,11 +23,18 @@ class CategoryResource extends JsonResource
         } else {
             $media = null;
         }
+
+        $productCount = Cache::remember('category.product.count.' . $this->id, 60, function () {
+            return $this->products->count();
+        });
+
         return [
-            'id'          => $this->id,
-            'name'        => $this->name,
-            'slug'        => $this->slug,
-            'media'       => $media,
+            'id'            => $this->id,
+            'name'          => $this->name,
+            'slug'          => $this->slug,
+            'icon'          => $this->svg,
+            'media'         => $media,
+            'product_count' => $productCount,
         ];
     }
 }

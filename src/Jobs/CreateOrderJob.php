@@ -14,6 +14,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Skeleton\Store\Events\UserSubscribedToPlan;
+use Mariojgt\SkeletonAdmin\Notifications\GenericNotification;
 
 class CreateOrderJob implements ShouldQueue
 {
@@ -65,6 +66,15 @@ class CreateOrderJob implements ShouldQueue
             $orderItem->item()->associate($product->model);
             $orderItem->save();
         }
+
+        $this->user->notify(
+            new GenericNotification(
+                'Thank you for your purchase',
+                'success',
+                'Your order has been placed successfully',
+                'icon'
+            )
+        );
     }
 
     /**

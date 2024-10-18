@@ -73,7 +73,7 @@ class StripeController extends Controller
             'products' => 'required|array',
             'products.*.id' => 'required|integer', // Check if plan exists
             'products.*.quantity' => 'required|integer|min:1', // Quantity must be a positive integer
-            'products.*.type' => 'required|string|in:course', // Assuming 'type' can only be 'course'
+            'products.*.type' => 'required|string|in:course,product', // Type must be course or product
         ]);
 
         $stripe = new Stripe();
