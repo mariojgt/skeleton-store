@@ -24,10 +24,10 @@ class StripeController extends Controller
 
         if (empty($plan->stripe_price_id)) {
             if ($plan->auto_renew) {
-                $paymentId = $stripe->createPrice($plan->price, 'gbp', $plan->name, 'month', $plan->duration);
+                $paymentId = $stripe->createPrice($plan->price, config('ecommerceStore')['store_currency'], $plan->name, 'month', $plan->duration);
             } else {
                 $stripeProduct = $stripe->createProduct($plan->name, null, false, $plan->description);
-                $paymentId = $stripe->createOneTimePrice($plan->price, $stripeProduct->id, 'gbp');
+                $paymentId = $stripe->createOneTimePrice($plan->price, $stripeProduct->id, config('ecommerceStore')['store_currency']);
             }
             $plan->stripe_price_id = $paymentId->id;
             $plan->save();
@@ -87,7 +87,7 @@ class StripeController extends Controller
 
             if (empty($checkoutItem->model->stripe_price_id)) {
                 $stripeProduct = $stripe->createProduct($checkoutItem->name, $checkoutItem->media_url);
-                $paymentId = $stripe->createOneTimePrice($checkoutItem->amount, $stripeProduct->id, 'gbp');
+                $paymentId = $stripe->createOneTimePrice($checkoutItem->amount, $stripeProduct->id, config('ecommerceStore')['store_currency']);
                 $checkoutItem->model->stripe_price_id = $paymentId->id;
                 $checkoutItem->model->save();
             }

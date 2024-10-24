@@ -2,7 +2,9 @@
 
 namespace Skeleton\Store;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\ServiceProvider;
+use Skeleton\Store\Models\StoreSetting;
 use Skeleton\Store\Events\UserSubscribedToPlan;
 use Skeleton\Store\Events\UserUnsubscribedToPlan;
 use Skeleton\Store\Listeners\SubscribeUserToPlan;
@@ -47,6 +49,13 @@ class SkeletonStoreServiceProvider extends ServiceProvider
             'subscription',
             \Skeleton\Store\Middleware\HandleStripePayment::class
         );
+
+        Cache::remember('ecommerceStore', 60 * 60 * 24, function () {
+            // Load the store config
+            $configArray = StoreSetting::all()->pluck('value', 'key')->toArray();
+            // add the config to the config helper
+            config(['ecommerceStore' => $configArray]);
+        });
     }
 
     /**

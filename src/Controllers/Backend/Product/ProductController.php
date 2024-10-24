@@ -188,6 +188,7 @@ class ProductController extends Controller
             'price'         => 'required | numeric',
             'type'          => 'required',
             'price_type'    => 'required',
+            'file_path'     => 'required',
         ]);
 
         $product->name        = $data['name'];
@@ -197,6 +198,7 @@ class ProductController extends Controller
         $product->price       = $data['price'];
         $product->type        = $data['type'];
         $product->price_type  = $data['price_type'];
+        $product->file_path   = $data['file_path'];
         $product->save();
 
         // Get all the ids form the $data['course_image']

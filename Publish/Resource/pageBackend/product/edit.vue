@@ -92,6 +92,12 @@
                                 :options="props.type_enum"
                                 label="Type"
                             />
+                            <input-field
+                                v-model="form.file_path"
+                                label="File Path"
+                                type="text"
+                                placeholder="Download File Path"
+                            />
                         </TabPanel>
                     </TabPanels>
                 </form>
@@ -158,6 +164,7 @@ const form = useForm({
     category_id: props.product.data.category_id,
     type: props.product.data.type,
     price_type: props.product.data.price_type,
+    file_path: props.product.data.file_path,
 });
 
 // SubmitTheForm
