@@ -51,8 +51,13 @@ class SkeletonStoreServiceProvider extends ServiceProvider
         );
 
         Cache::remember('ecommerceStore', 60 * 60 * 24, function () {
-            // Load the store config
-            $configArray = StoreSetting::all()->pluck('value', 'key')->toArray();
+            $configArray = [];
+
+            // check if the table exists before querying it
+            if (\Schema::hasTable('store_settings')) {
+                // Load the store config
+                $configArray = StoreSetting::all()->pluck('value', 'key')->toArray();
+            }
             // add the config to the config helper
             config(['ecommerceStore' => $configArray]);
         });
