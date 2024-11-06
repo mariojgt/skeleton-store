@@ -7,7 +7,7 @@
             :endpoint-delete="props.endpointDelete"
             :endpoint-create="props.endpointCreate"
             :endpoint-edit="props.endpointEdit"
-            :table-title="'Product Category'"
+            :table-title="'Product'"
             :permission="props.permission"
             :custom_edit_route="props.custom_edit_route"
         />

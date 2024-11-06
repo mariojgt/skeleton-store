@@ -4,13 +4,14 @@ namespace Skeleton\Store\Controllers\Backend\Product;
 
 use Inertia\Inertia;
 use Illuminate\Http\Request;
-use Skeleton\Store\Enums\PriceType;
 use Skeleton\Store\Models\Product;
+use Skeleton\Store\Enums\PriceType;
 use Skeleton\Store\Models\Category;
 use App\Http\Controllers\Controller;
 use Mariojgt\Magnifier\Models\Media;
 use Skeleton\Store\Enums\ProductType;
 use Mariojgt\Builder\Enums\FieldTypes;
+use Mariojgt\Builder\Helpers\FormHelper;
 use Skeleton\Store\Resource\ProductResource;
 use Skeleton\Store\Resource\CategoryResource;
 use Mariojgt\SkeletonAdmin\Enums\PermissionEnum;
@@ -30,103 +31,97 @@ class ProductController extends Controller
             ]
         ];
 
-        // Table columns
-        $columns = [
-            [
-                'label'     => 'Id',    // Display name
-                'key'       => 'id',    // Table column key
-                'sortable'  => true,    // Can be use in the filter
-                'canCreate' => false,   // Can be use in the create form
-                'canEdit'   => false,   // Can be use in the edit form
-            ],
-            [
-                'label'     => 'Name',                    // Display name
-                'key'       => 'name',                    // Table column key
-                'sortable'  => true,                      // Can be use in the filter
-                'canCreate' => true,                      // Can be use in the create form
-                'canEdit'   => true,                      // Can be use in the edit form
-                'type'      => FieldTypes::TEXT->value,   // Type text,email,password,date,timestamp
-            ],
-            [
-                'label'     => 'Slug',
-                'key'       => 'slug',
-                'sortable'  => true,
-                'unique'    => true,
-                'canCreate' => true,
-                'canEdit'   => true,
-                'type'      => FieldTypes::SLUG->value,
-            ],
-            [
-                'label'     => 'Price',
-                'key'       => 'price',
-                'sortable'  => true,
-                'canCreate' => true,
-                'canEdit'   => true,
-                'type'      => FieldTypes::NUMBER->value,
-            ],
-            [
-                'label'     => 'Category',
-                'key'       => 'category_id',
-                'sortable'  => false,
-                'canCreate' => true,
-                'canEdit'   => true,
-                'nullable'  => true,
-                'type'      => 'model_search',
-                'endpoint'  => route('admin.api.generic.table'),
-                'columns' => [
-                    [
-                        'key'       => 'id',
-                        'sortable'  => false
-                    ],
-                    [
-                        'key'       => 'name',
-                        'sortable'  => true,
-                    ],
+        // Initialize form helper
+        $form = new FormHelper();
+        $formConfig = $form
+        // Add fields
+        ->addIdField()
+        ->addField(
+            label: 'Name',
+            key: 'name',
+            sortable: true,
+            canCreate: true,
+            canEdit: true,
+            type: FieldTypes::TEXT->value
+        )
+        ->addField(
+            label: 'Slug',
+            key: 'slug',
+            sortable: true,
+            canCreate: true,
+            canEdit: true,
+            type: FieldTypes::SLUG->value,
+            unique: true
+        )
+        ->addField(
+            label: 'Price',
+            key: 'price',
+            sortable: true,
+            canCreate: true,
+            canEdit: true,
+            type: FieldTypes::NUMBER->value
+        )
+        ->addField(
+            label: 'Category',
+            key: 'category_id',
+            sortable: false,
+            canCreate: true,
+            canEdit: true,
+            nullable: true,
+            type: FieldTypes::MODEL_SEARCH->value,
+            endpoint: route('admin.api.generic.table'),
+            columns: [
+                [
+                    'key'       => 'id',
+                    'sortable'  => false
                 ],
-                'model'        => encrypt(Category::class),
-                'singleSearch' => true,
-                'displayKey'   => 'name'
+                [
+                    'key'       => 'name',
+                    'sortable'  => true,
+                ],
             ],
-            [
-                'label'     => 'Image',
-                'key'       => 'image',
-                'sortable'  => false,
-                'canCreate' => true,
-                'canEdit'   => true,
-                'nullable'  => true,
-                'type'      => 'media',
-                'endpoint'  => route('admin.api.media.search'),
+            model: encrypt(Category::class),
+            singleSearch: true,
+            displayKey: 'name'
+        )
+        ->addField(
+            label: 'Image',
+            key: 'image',
+            sortable: false,
+            canCreate: true,
+            canEdit: true,
+            nullable: true,
+            type: FieldTypes::MEDIA->value,
+            endpoint: route('admin.api.media.search')
+        )
+        // Set endpoints
+        ->setEndpoints(
+            listEndpoint: route('admin.api.generic.table'),
+            deleteEndpoint: route('admin.api.generic.table.delete'),
+            createEndpoint: route('admin.api.generic.table.create'),
+            editEndpoint: route('admin.api.generic.table.update')
+        )
+        // Set model
+        ->setModel(Product::class)
+        // Set permissions
+        ->setPermissions(
+            guard: 'skeleton_admin',
+            type: 'permission',
+            permissions: [
+                'store'  => 'create-permission',
+                'update' => 'edit-permission',
+                'delete' => 'delete-permission',
+                'index'  => 'read-permission',
             ]
-        ];
+        )
+        ->setCustomEditRoute('/' . config('skeleton.route_prefix') . '/edit/product/')
+        ->build();
 
         return Inertia::render('BackEnd/Vendor/skeleton-store/product/index', [
             'title'      => 'Product | 📦',
             'table_name' => 'Product',
             'breadcrumb' => $breadcrumb,
-            // Required for the generic builder table api
-            'endpoint'       => route('admin.api.generic.table'),
-            'endpointDelete' => route('admin.api.generic.table.delete'),
-            'endpointCreate' => route('admin.api.generic.table.create'),
-            'endpointEdit'   => route('admin.api.generic.table.update'),
-            // You table columns
-            'columns'        => $columns,
-            // The model where all those actions will take place
-            'model'          => encrypt(Product::class),
-            // If you want to protect your crud form you can use this below not required
-            // The permission name for the crud
-            'permission'     => encrypt([
-                'guard'         => 'skeleton_admin',
-                // You can use permission or role up to you
-                'type'          => 'permission',
-                // The permission name or role
-                'key' => [
-                    'store'  => PermissionEnum::CreatePermission->value,
-                    'update' => PermissionEnum::EditPermission->value,
-                    'delete' => PermissionEnum::DeletePermission->value,
-                    'index'  => PermissionEnum::ReadPermission->value,
-                ],
-            ]),
-            'custom_edit_route' => '/' . config('skeleton.route_prefix') . '/edit/product/',
+            ...$formConfig
         ]);
     }
 
@@ -142,28 +137,35 @@ class ProductController extends Controller
             ]
         ];
 
-        $dynamicCategorySearch = [
-            'label'     => 'Category',
-            'key'       => 'category_id',
-            'sortable'  => false,
-            'canCreate' => true,
-            'canEdit'   => true,
-            'nullable'  => true,
-            'type'      => 'model_search',
-            'endpoint'  => route('admin.api.generic.table'),
-            'columns' => [
-                [
-                    'key'       => 'id',
-                    'sortable'  => false
+        // Initialize form helper
+        $form = new FormHelper();
+        $formConfig = $form
+            ->addField(
+                label: 'Category',
+                key: 'category_id',
+                sortable: false,
+                canCreate: true,
+                canEdit: true,
+                nullable: true,
+                type: FieldTypes::MODEL_SEARCH->value,
+                endpoint: route('admin.api.generic.table'),
+                columns: [
+                    [
+                        'key'       => 'id',
+                        'sortable'  => false
+                    ],
+                    [
+                        'key'       => 'name',
+                        'sortable'  => true,
+                    ],
                 ],
-                [
-                    'key'       => 'name',
-                    'sortable'  => true,
-                ],
-            ],
-            'model'        => encrypt(Category::class),
-            'singleSearch' => true,
-        ];
+                model: encrypt(Category::class),
+                singleSearch: true,
+                displayKey: 'name'
+            )
+            ->build();
+
+        $dynamicCategorySearch = $formConfig['columns'][0];
 
         return Inertia::render('BackEnd/Vendor/skeleton-store/product/edit', [
             'breadcrumb'            => $breadcrumb,
