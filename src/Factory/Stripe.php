@@ -12,7 +12,7 @@ class Stripe
         $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret'));
     }
 
-    public function createSession($user, $lineItems, $autoRenew = true, $successUrl = null, $cancelUrl = null)
+    public function createSession($user, $lineItems, $autoRenew = true, $successUrl = null, $cancelUrl = null, $allowPromotionCodes = true)
     {
         $customer = $user->stripe_id;
         if (empty($customer)) {
@@ -30,6 +30,7 @@ class Stripe
             'mode' => $autoRenew ? 'subscription' : 'payment',
             'success_url' => $successUrl ?? env('APP_URL') . '/success',
             'cancel_url' => $cancelUrl ?? env('APP_URL') . '/cancel',
+            'allow_promotion_codes' => $allowPromotionCodes
         ]);
     }
 
