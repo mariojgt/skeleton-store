@@ -56,7 +56,7 @@ class StoreSeeder extends Seeder
 
         // Create a user using factory
         $user             = new User();
-        $user->user       = 'johnDoe';
+        $user->username   = 'johnDoe';
         $user->first_name = 'John Doe';
         $user->last_name  = 'Doe';
         $user->email      = 'johnTeste@teste.com';
