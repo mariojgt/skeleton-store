@@ -11,7 +11,7 @@ class Product extends BaseMasterModel
 {
     use HasFactory;
     use SoftDeletes;
-    protected $fillable = ['name', 'description', 'price', 'file_path', 'category_id'];
+    protected $fillable = ['name', 'description', 'price', 'category_id', 'free_with_subscription'];
 
     protected $casts = [
         'type'       => ProductType::class,
@@ -26,5 +26,10 @@ class Product extends BaseMasterModel
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function resources()
+    {
+        return $this->hasMany(ProductResource::class);
     }
 }

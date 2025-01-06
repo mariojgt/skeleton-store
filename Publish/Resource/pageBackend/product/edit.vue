@@ -27,6 +27,13 @@
                             >Settings</a
                         >
                     </Tab>
+                    <Tab v-slot="{ selected }">
+                        <a
+                            class="tab tab-lg tab-bordered rounded-md bg-neutral"
+                            :class="selected ? 'bg-primary text-black' : ''"
+                            >Add Resources</a
+                        >
+                    </Tab>
                 </TabList>
                 <form @submit.prevent="submitForm">
                     <TabPanels class="mt-2">
@@ -92,12 +99,96 @@
                                 :options="props.type_enum"
                                 label="Type"
                             />
-                            <input-field
-                                v-model="form.file_path"
-                                label="File Path"
-                                type="text"
-                                placeholder="Download File Path"
+                            <Toggle
+                                v-model="form.free_with_subscription"
+                                label="Is Free WIth Subscription"
                             />
+                        </TabPanel>
+                        <TabPanel>
+                            <div class="flex flex-col space-y-4">
+                                <button type="button" class="btn btn-primary" @click="newResourceModal = true">
+                                    Add New Resource
+                                </button>
+
+                                <!-- New Resource Modal -->
+                                <div v-if="newResourceModal" class="p-4 border rounded-lg bg-base-300">
+                                    <h2 class="text-xl font-bold mb-2">Add New Resource</h2>
+                                    <input-field v-model="newResource.title" type="text" label="Title" />
+                                    <input-field v-model="newResource.description" type="text" label="Description" />
+                                    <div class="mb-2">
+                                        <label>Resource Type</label>
+                                        <select v-model="newResource.resource_type" class="select select-bordered w-full">
+                                            <option value="link">Link</option>
+                                            <option value="file">File</option>
+                                        </select>
+                                    </div>
+                                    <input-field
+                                        v-if="newResource.resource_type === 'link'"
+                                        v-model="newResource.resource_url"
+                                        type="text"
+                                        label="Resource URL"
+                                    />
+                                    <input-field
+                                        v-if="newResource.resource_type === 'file'"
+                                        v-model="newResource.file_path"
+                                        type="text"
+                                        label="File Path"
+                                    />
+
+                                    <div class="flex space-x-2 mt-4">
+                                        <button type="button" class="btn btn-success" @click="createResource">Create Resource</button>
+                                        <button type="button" class="btn btn-error" @click="newResourceModal = false">Cancel</button>
+                                    </div>
+                                </div>
+
+                                <!-- Resources List -->
+                                <div v-for="(resource, index) in productResources" :key="index" class="p-4 border bg-base-100 rounded-lg flex flex-col space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold">{{ resource.title }}</h3>
+                                        <div class="space-x-2">
+                                            <button class="btn btn-secondary" @click="resource.editing = !resource.editing">Edit</button>
+                                            <button class="btn btn-error" @click="deleteResource(resource)">Delete</button>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm">{{ resource.description }}</p>
+                                    <div v-if="resource.resource_type === 'link'">
+                                        <a :href="resource.resource_url" target="_blank" class="text-blue-500 underline">Open Link</a>
+                                    </div>
+                                    <div v-if="resource.resource_type === 'file'">
+                                        <span>File: {{ resource.file_path }}</span>
+                                    </div>
+
+                                    <!-- Edit Form -->
+                                    <div v-if="resource.editing" class="p-4 bg-base-200 rounded-lg">
+                                        <input-field v-model="resource.title" type="text" label="Title" />
+                                        <input-field v-model="resource.description" type="text" label="Description" />
+                                        <div class="mb-2">
+                                            <label>Resource Type</label>
+                                            <select v-model="resource.resource_type" class="select select-bordered w-full">
+                                                <option value="link">Link</option>
+                                                <option value="file">File</option>
+                                            </select>
+                                        </div>
+                                        <input-field
+                                            v-if="resource.resource_type === 'link'"
+                                            v-model="resource.resource_url"
+                                            type="text"
+                                            label="Resource URL"
+                                        />
+                                        <input-field
+                                            v-if="resource.resource_type === 'file'"
+                                            v-model="resource.file_path"
+                                            type="text"
+                                            label="File Path"
+                                        />
+
+                                        <div class="flex space-x-2 mt-4">
+                                            <button class="btn btn-success" @click="updateResource(resource)">Save Changes</button>
+                                            <button class="btn btn-error" @click="resource.editing = false">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </TabPanel>
                     </TabPanels>
                 </form>
@@ -110,6 +201,7 @@
 </template>
 
 <script setup>
+import { api } from "../../../../../Boot/axios.js";
 import { useForm } from "@inertiajs/vue3";
 import { onMounted } from "vue";
 import Layout from "@backend_layout/App.vue";
@@ -164,7 +256,7 @@ const form = useForm({
     category_id: props.product.data.category_id,
     type: props.product.data.type,
     price_type: props.product.data.price_type,
-    file_path: props.product.data.file_path,
+    free_with_subscription: props.product.data.free_with_subscription
 });
 
 // SubmitTheForm
@@ -173,4 +265,77 @@ const submitForm = () => {
         route("admin.store.product.update", { product: props.product.data.id })
     );
 };
+
+// Add these to your existing script setup
+let productResources = $ref([]);
+let newResourceModal = $ref(false);
+let newResource = $ref({
+    title: '',
+    description: '',
+    resource_type: 'link',
+    resource_url: '',
+    file_path: ''
+});
+
+// Load resources
+const loadResources = async () => {
+    try {
+        const response = await api.get(route('admin.store.product.resources.index', props.product.data.id));
+        productResources = response.data.data;
+    } catch (error) {
+        console.error('Error loading resources:', error);
+    }
+};
+
+// Create resource
+const createResource = async () => {
+    try {
+        await api.post(
+            route('admin.store.product.resources.store', props.product.data.id),
+            newResource
+        );
+        newResourceModal = false;
+        loadResources();
+        // Reset form
+        newResource = {
+            title: '',
+            description: '',
+            resource_type: 'link',
+            resource_url: '',
+            file_path: ''
+        };
+    } catch (error) {
+        console.error('Error creating resource:', error);
+    }
+};
+
+// Update resource
+const updateResource = async (resource) => {
+    try {
+        await api.put(
+            route('admin.store.product.resources.update', [props.product.data.id, resource.id]),
+            resource
+        );
+        loadResources();
+    } catch (error) {
+        console.error('Error updating resource:', error);
+    }
+};
+
+// Delete resource
+const deleteResource = async (resource) => {
+    try {
+        await api.delete(
+            route('admin.store.product.resources.destroy', [props.product.data.id, resource.id])
+        );
+        loadResources();
+    } catch (error) {
+        console.error('Error deleting resource:', error);
+    }
+};
+
+// Load resources on mount
+onMounted(() => {
+    loadResources();
+});
 </script>

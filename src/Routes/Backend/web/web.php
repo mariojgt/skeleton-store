@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Skeleton\Store\Controllers\Backend\Plans\PlansController;
 use Skeleton\Store\Controllers\Backend\Product\ProductController;
 use Skeleton\Store\Controllers\Backend\Settings\StoreSettingsController;
+use Skeleton\Store\Controllers\Backend\Product\ProductResourceController;
 use Skeleton\Store\Controllers\Backend\ProductCategory\ProductCategoryController;
 
 // Standard
@@ -28,5 +29,12 @@ Route::group([
 
     Route::controller(StoreSettingsController::class)->group(function () {
         Route::get('/store/settings', 'index')->name('admin.store.settings.index');
+    });
+
+    Route::prefix('admin/store/product/{product}/resources')->name('admin.store.product.resources.')->group(function () {
+        Route::get('/', [ProductResourceController::class, 'index'])->name('index');
+        Route::post('/', [ProductResourceController::class, 'store'])->name('store');
+        Route::put('/{resource}', [ProductResourceController::class, 'update'])->name('update');
+        Route::delete('/{resource}', [ProductResourceController::class, 'destroy'])->name('destroy');
     });
 });

@@ -182,15 +182,15 @@ class ProductController extends Controller
     {
         // Validate the request
         $data = $request->validate([
-            'name'          => 'required',
-            'slug'          => 'required',
-            'category_id'   => 'required',
-            'product_image' => 'required',
-            'description'   => 'required',
-            'price'         => 'required | numeric',
-            'type'          => 'required',
-            'price_type'    => 'required',
-            'file_path'     => 'required',
+            'name'                   => 'required',
+            'slug'                   => 'required',
+            'category_id'            => 'required',
+            'product_image'          => 'required',
+            'description'            => 'required',
+            'price'                  => 'required | numeric',
+            'type'                   => 'required',
+            'price_type'             => 'required',
+            'free_with_subscription' => 'required',
         ]);
 
         $product->name        = $data['name'];
@@ -200,7 +200,7 @@ class ProductController extends Controller
         $product->price       = $data['price'];
         $product->type        = $data['type'];
         $product->price_type  = $data['price_type'];
-        $product->file_path   = $data['file_path'];
+        $product->free_with_subscription  = $data['free_with_subscription'];
         $product->save();
 
         // Get all the ids form the $data['course_image']
