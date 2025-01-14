@@ -3,26 +3,47 @@
 namespace Skeleton\Store\Factory;
 
 use Stripe\StripeClient;
+use Exception;
 
+/**
+ * Stripe Factory Class
+ *
+ * Handles all Stripe-related operations including checkout sessions, products,
+ * prices, subscriptions, and invoice management.
+ */
 class Stripe
 {
+    /** @var StripeClient */
     public $stripe;
+
+    /**
+     * Initialize Stripe client with API key
+     *
+     * Note: The stripe property is public to maintain compatibility with existing code.
+     * Consider using getter methods for better encapsulation in future updates.
+     */
     public function __construct()
     {
         $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret'));
     }
 
+    /**
+     * Create a Stripe checkout session
+     *
+     * @param object $user User object containing email and stripe_id
+     * @param array $lineItems Array of items to be purchased
+     * @param bool $autoRenew Whether to create a subscription or one-time payment
+     * @param string|null $successUrl URL to redirect after successful payment
+     * @param string|null $cancelUrl URL to redirect after cancelled payment
+     * @param bool $allowPromotionCodes Whether to allow promotion codes
+     * @return \Stripe\Checkout\Session
+     */
     public function createSession($user, $lineItems, $autoRenew = true, $successUrl = null, $cancelUrl = null, $allowPromotionCodes = true)
     {
-        $customer = $user->stripe_id;
-        if (empty($customer)) {
-            $customer = $this->stripe->customers->create([
-                'email' => $user->email,
-            ])->id;
-            $user->stripe_id = $customer;
-            $user->save();
-        }
+        // Create or retrieve Stripe customer
+        $customer = $this->getOrCreateCustomer($user);
 
+        // Create checkout session
         return $this->stripe->checkout->sessions->create([
             'customer' => $customer,
             'payment_method_types' => ['card'],
@@ -34,35 +55,71 @@ class Stripe
         ]);
     }
 
+    /**
+     * Create or retrieve a Stripe customer
+     *
+     * @param object $user User object
+     * @return string Customer ID
+     */
+    protected function getOrCreateCustomer($user)
+    {
+        if (!empty($user->stripe_id)) {
+            return $user->stripe_id;
+        }
+
+        $customer = $this->stripe->customers->create([
+            'email' => $user->email,
+        ]);
+
+        $user->stripe_id = $customer->id;
+        $user->save();
+
+        return $customer->id;
+    }
+
+    /**
+     * Create a recurring price for a subscription
+     *
+     * @param float $price Price in the currency's base unit (e.g., dollars)
+     * @param string $currency Currency code (e.g., 'gbp', 'usd')
+     * @param string $productName Name of the product
+     * @param string $interval Billing interval ('month', 'year', etc.)
+     * @param int $intervalCount Number of intervals between billings
+     * @return \Stripe\Price
+     */
     public function createPrice($price, $currency = 'gbp', $productName = 'Gold Plan', $interval = 'month', $intervalCount = 1)
     {
-        // Convert price to cents
-        $price = $price * 100;
-
         return $this->stripe->prices->create([
-            'currency' => $currency,
-            'unit_amount' => $price,
+            'currency' => strtolower($currency),
+            'unit_amount' => (int)($price * 100), // Convert to smallest currency unit
             'recurring' => [
-                'interval'       => $interval,
+                'interval' => $interval,
                 'interval_count' => $intervalCount
             ],
             'product_data' => ['name' => $productName],
         ]);
     }
 
+    /**
+     * Create a Stripe product
+     *
+     * @param string $name Product name
+     * @param string|null $imageUrl URL of product image
+     * @param bool $isSubscription Whether the product is a subscription
+     * @param string|null $description Product description
+     * @return \Stripe\Product
+     */
     public function createProduct($name, $imageUrl = null, $isSubscription = false, $description = null)
     {
         $productData = [
             'name' => $name,
+            'type' => $isSubscription ? 'service' : 'good'
         ];
 
-        if (!empty($imageUrl)) {
-            $productData['images'] = [$imageUrl]; // Add images key only if $imageUrl is not empty
+        if ($imageUrl) {
+            $productData['images'] = [$imageUrl];
         }
 
-        if ($isSubscription) {
-            $productData['type'] = 'service';
-        }
         if ($description) {
             $productData['description'] = $description;
         }
@@ -70,27 +127,41 @@ class Stripe
         return $this->stripe->products->create($productData);
     }
 
-
+    /**
+     * Create a one-time price for a product
+     *
+     * @param float $price Price in the currency's base unit
+     * @param string $productId Stripe product ID
+     * @param string $currency Currency code
+     * @return \Stripe\Price
+     */
     public function createOneTimePrice($price, $productId, $currency = 'gbp')
     {
-        // Convert price to cents
-        $priceInCents = $price * 100;
-
-        // Create the price for a one-time product
         return $this->stripe->prices->create([
-            'currency' => $currency,
-            'unit_amount' => $priceInCents,
-            'product' => $productId, // Use the provided product ID
+            'currency' => strtolower($currency),
+            'unit_amount' => (int)($price * 100),
+            'product' => $productId,
         ]);
     }
 
-
+    /**
+     * Cancel a subscription immediately
+     *
+     * @param string $subscriptionId Stripe subscription ID
+     * @return \Stripe\Subscription
+     */
     public function cancelSubscription($subscriptionId)
     {
-        // Cancel the subscription immediately
         return $this->stripe->subscriptions->cancel($subscriptionId);
     }
 
+    /**
+     * Create a billing portal session
+     *
+     * @param string $customerId Stripe customer ID
+     * @param string|null $returnUrl URL to return to after leaving the portal
+     * @return \Stripe\BillingPortal\Session
+     */
     public function createBillingPortalSession($customerId, $returnUrl = null)
     {
         return $this->stripe->billingPortal->sessions->create([
@@ -99,61 +170,85 @@ class Stripe
         ]);
     }
 
+    /**
+     * Retrieve subscription details
+     *
+     * @param string $subscriptionId Stripe subscription ID
+     * @return \Stripe\Subscription|array Array with error message if retrieval fails
+     */
     public function getSubscription($subscriptionId)
     {
         try {
-            // Retrieve the subscription details from Stripe
             return $this->stripe->subscriptions->retrieve($subscriptionId);
-        } catch (\Exception $e) {
-            // Handle any errors (such as subscription not found)
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
-     * Create an invoice and mark it as paid based on the session ID.
+     * Create and mark an invoice as paid for a completed checkout session
      *
-     * @param string $sessionId
-     * @return array
+     * @param string $sessionId Stripe session ID
+     * @param object $order Order object containing items
+     * @return array Invoice details or error message
      */
     public function createInvoiceAndMarkAsPaid($sessionId, $order)
     {
         try {
-            // Retrieve the session using the session ID
+            // Retrieve checkout session
             $session = $this->stripe->checkout->sessions->retrieve($sessionId);
 
-            // Create an invoice for the customer
+            // Create initial invoice
             $invoice = $this->stripe->invoices->create([
                 'customer' => $session->customer,
-                'auto_advance' => false, // Set to false so we can finalize manually
+                'auto_advance' => false,
             ]);
 
-            // Create invoice items for each order item
-            foreach ($order->orderItems as $item) {
-                $this->stripe->invoiceItems->create([
-                    'customer' => $session->customer,
-                    'price' => $item->item->stripe_price_id,
-                    'quantity' => $item->quantity, // Make sure to include the quantity
-                    'invoice' => $invoice->id,
-                ]);
-            }
+            // Add items to invoice
+            $this->addItemsToInvoice($invoice->id, $session->customer, $order->orderItems);
 
-            // Finalize the invoice
+            // Finalize and mark invoice as paid
             $finalizedInvoice = $this->stripe->invoices->finalizeInvoice($invoice->id);
-            // Mark the invoice as paid without charging
             $paidInvoice = $this->stripe->invoices->update($finalizedInvoice->id, [
                 'paid' => true
             ]);
 
-            // Return the finalized invoice URL
             return [
                 'invoice_url' => $paidInvoice->hosted_invoice_url,
                 'invoice_id' => $paidInvoice->id,
                 'amount_paid' => $paidInvoice->amount_paid,
             ];
-        } catch (\Exception $e) {
-            // Handle any errors that occur during the invoice creation process
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function getStripeClient(): StripeClient
+    {
+        return $this->stripe;
+    }
+
+    public function retrieveSession(string $sessionId)
+    {
+        return $this->stripe->checkout->sessions->retrieve($sessionId);
+    }
+
+    /**
+     * Add items to an invoice
+     *
+     * @param string $invoiceId Stripe invoice ID
+     * @param string $customerId Stripe customer ID
+     * @param array $orderItems Array of order items
+     */
+    protected function addItemsToInvoice($invoiceId, $customerId, $orderItems)
+    {
+        foreach ($orderItems as $item) {
+            $this->stripe->invoiceItems->create([
+                'customer' => $customerId,
+                'price' => $item->item->stripe_price_id,
+                'quantity' => $item->quantity,
+                'invoice' => $invoiceId,
+            ]);
         }
     }
 }
