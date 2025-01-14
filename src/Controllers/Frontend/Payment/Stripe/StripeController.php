@@ -54,7 +54,15 @@ class StripeController extends Controller
             $this->getCancelUrl()
         );
 
-        $this->dispatchOrderCreation($user, $plan, $session->id);
+        $productDetail[] = new ProductDetail(
+            $plan->name,
+            $plan->price,
+            $plan,
+            1,
+            [],
+        );
+
+        $this->dispatchOrderCreation($user, $productDetail, $session->id);
 
         return [
             'session' => $session->url,

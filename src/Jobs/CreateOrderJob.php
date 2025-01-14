@@ -85,6 +85,7 @@ class CreateOrderJob implements ShouldQueue
      */
     protected function calculateTotal($products)
     {
+
         $total = 0;
         foreach ($products as $product) {
             $total += $product->amount * $product->quantity;
