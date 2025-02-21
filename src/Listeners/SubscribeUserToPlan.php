@@ -67,7 +67,8 @@ class SubscribeUserToPlan
                 'Plan' . $plan->name . ' subscribed',
                 'success',
                 'You have successfully subscribed to the plan ' . $plan->name,
-                'icon'
+                'icon',
+                true
             )
         );
     }

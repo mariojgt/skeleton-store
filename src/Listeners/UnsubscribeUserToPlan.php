@@ -32,7 +32,8 @@ class UnsubscribeUserToPlan
                 'Plan' . $plan->name . ' canceled',
                 'info',
                 'Your subscription to the plan ' . $plan->name . ' has been canceled',
-                'icon'
+                'icon',
+                true
             )
         );
     }
