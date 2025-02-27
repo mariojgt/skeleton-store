@@ -14,6 +14,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Skeleton\Store\Events\UserSubscribedToPlan;
+use Mariojgt\SkeletonAdmin\Notifications\GenericNotification;
 
 class OrderPaidJob implements ShouldQueue
 {
@@ -42,5 +43,14 @@ class OrderPaidJob implements ShouldQueue
         $order = Order::where('stripe_session_id', $this->stripeSessionId)->firstOrFail();
         $order->status = OrderStatus::completed->value;
         $order->save();
+
+        $user = $order->user;
+        $user->notify(new GenericNotification(
+            'Thank you for your order',
+            'success',
+            'Your order has been paid successfully, order #' . $order->id,
+            'icon',
+            true
+        ));
     }
 }

@@ -84,6 +84,7 @@ class StripeController extends Controller
         $lineItems = $this->createProductLineItems($checkoutItems);
 
         $user = auth()->user();
+
         $session = $this->createCheckoutSession(
             $user,
             $lineItems,

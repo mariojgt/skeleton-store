@@ -69,9 +69,9 @@ class CreateOrderJob implements ShouldQueue
 
         $this->user->notify(
             new GenericNotification(
-                'Thank you for your purchase',
+                'Thank you for your order',
                 'success',
-                'Your order has been placed successfully',
+                'Your order has been placed successfully and is pending payment. Please proceed to payment to complete your order.',
                 'icon'
             )
         );
