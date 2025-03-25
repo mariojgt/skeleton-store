@@ -175,6 +175,7 @@ class ProductController extends Controller
             'selected_category'     => new CategoryResource($product->category),
             'type_enum'             => ProductType::array(),
             'price_type_enum'       => PriceType::array(),
+            'apiKey'            => config('gamehub.tiny_mce_key'),
         ]);
     }
 
