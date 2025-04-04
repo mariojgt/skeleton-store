@@ -11,19 +11,39 @@ class UserUnsubscribedToPlan
 {
     use Dispatchable, SerializesModels;
 
-    public $user;
-    public $plan;
+    /**
+     * User who unsubscribed
+     *
+     * @var User
+     */
+    public User $user;
+
+    /**
+     * Plan the user unsubscribed from
+     *
+     * @var Plan
+     */
+    public Plan $plan;
+
+    /**
+     * Payment gateway used
+     *
+     * @var string|null
+     */
+    public ?string $paymentGateway;
 
     /**
      * Create a new event instance.
      *
-     * @param  User  $user
-     * @param  Plan  $plan
+     * @param User $user
+     * @param Plan $plan
+     * @param string|null $paymentGateway
      * @return void
      */
-    public function __construct(User $user, Plan $plan)
+    public function __construct(User $user, Plan $plan, ?string $paymentGateway = null)
     {
         $this->user = $user;
         $this->plan = $plan;
+        $this->paymentGateway = $paymentGateway ?? config('skeletonStore.payment_gateway.default', 'stripe');
     }
 }

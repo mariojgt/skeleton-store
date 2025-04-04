@@ -24,7 +24,7 @@ class Stripe
      */
     public function __construct()
     {
-        $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret'));
+        $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret_key'));
     }
 
     /**
