@@ -10,7 +10,6 @@ use App\Http\Controllers\Controller;
 use Mariojgt\Builder\Enums\FieldTypes;
 use Skeleton\Store\Enums\DurationType;
 use Mariojgt\Builder\Helpers\FormHelper;
-use Skeleton\Store\Events\UserSubscribedToPlan;
 use Mariojgt\SkeletonAdmin\Enums\PermissionEnum;
 
 class PlansController extends Controller

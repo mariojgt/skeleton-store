@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Skeleton\Store\Controllers\Frontend\FrontendHomeController;
 use Skeleton\Store\Controllers\Frontend\Payment\PaymentController;
 use Skeleton\Store\Controllers\Frontend\Payment\Stripe\StripeController;
+use Skeleton\Store\Controllers\Frontend\Payment\PaymentManagementController;
 
 // Standard
 Route::group([
@@ -29,5 +30,18 @@ Route::group([
         // Keep legacy routes for backward compatibility
         Route::post('/skeleton-store/payment/stripe', 'subscriptionCheckout')->name('stripe.subscribe');
         Route::post('/skeleton-store/payment/stripe/checkout', 'productCheckout')->name('stripe.product.checkout');
+    });
+
+    // Payment management routes
+    Route::prefix('payment')->group(function () {
+        // Update payment method
+        Route::post('/update-payment-method', [PaymentManagementController::class, 'updatePaymentMethod'])
+            ->name('payment.update-method');
+        // Toggle auto renew
+        Route::post('/toggle-auto-renew', [PaymentManagementController::class, 'toggleAutoRenew'])
+            ->name('payment.toggle-auto-renew');
+        // Cancel subscription
+        Route::post('/cancel-subscription', [PaymentManagementController::class, 'cancelSubscription'])
+            ->name('payment.cancel-subscription');
     });
 });

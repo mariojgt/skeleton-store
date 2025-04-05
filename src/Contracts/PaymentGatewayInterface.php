@@ -125,4 +125,21 @@ interface PaymentGatewayInterface
      * @return string
      */
     public function getCancelUrl(): string;
+
+    /**
+     * Create a billing portal session for the user to manage their payment methods and subscriptions
+     *
+     * @param mixed $user
+     * @param string|null $returnUrl
+     * @return mixed
+     */
+    public function createBillingPortalSession($user, ?string $returnUrl = null);
+
+    /**
+     * Cancel a subscription
+     *
+     * @param string $subscriptionId
+     * @return mixed
+     */
+    public function cancelSubscription(string $subscriptionId);
 }
