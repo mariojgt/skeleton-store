@@ -3,28 +3,31 @@
 namespace Skeleton\Store\Factory;
 
 use Stripe\StripeClient;
-use Exception;
+use Skeleton\Store\Gateways\StripeGateway;
 
 /**
- * Stripe Factory Class
+ * Backward compatibility layer for the Stripe factory
  *
- * Handles all Stripe-related operations including checkout sessions, products,
- * prices, subscriptions, and invoice management.
+ * This class maintains backward compatibility with existing code
+ * by delegating calls to the new StripeGateway implementation.
+ *
+ * @deprecated Use StripeGateway directly or via PaymentGatewayFactory
  */
 class Stripe
 {
     /** @var StripeClient */
     public $stripe;
 
+    /** @var StripeGateway */
+    protected $gateway;
+
     /**
-     * Initialize Stripe client with API key
-     *
-     * Note: The stripe property is public to maintain compatibility with existing code.
-     * Consider using getter methods for better encapsulation in future updates.
+     * Initialize Stripe gateway and client
      */
     public function __construct()
     {
-        $this->stripe = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret_key'));
+        $this->gateway = new StripeGateway();
+        $this->stripe = $this->gateway->getClient();
     }
 
     /**
@@ -40,41 +43,13 @@ class Stripe
      */
     public function createSession($user, $lineItems, $autoRenew = true, $successUrl = null, $cancelUrl = null, $allowPromotionCodes = true)
     {
-        // Create or retrieve Stripe customer
-        $customer = $this->getOrCreateCustomer($user);
-
-        // Create checkout session
-        return $this->stripe->checkout->sessions->create([
-            'customer' => $customer,
-            'payment_method_types' => ['card'],
-            'line_items' => $lineItems,
-            'mode' => $autoRenew ? 'subscription' : 'payment',
-            'success_url' => $successUrl ?? env('APP_URL') . '/success',
-            'cancel_url' => $cancelUrl ?? env('APP_URL') . '/cancel',
-            'allow_promotion_codes' => $allowPromotionCodes
-        ]);
-    }
-
-    /**
-     * Create or retrieve a Stripe customer
-     *
-     * @param object $user User object
-     * @return string Customer ID
-     */
-    protected function getOrCreateCustomer($user)
-    {
-        if (!empty($user->stripe_id)) {
-            return $user->stripe_id;
-        }
-
-        $customer = $this->stripe->customers->create([
-            'email' => $user->email,
-        ]);
-
-        $user->stripe_id = $customer->id;
-        $user->save();
-
-        return $customer->id;
+        return $this->gateway->createCheckoutSession(
+            $user,
+            $lineItems,
+            $autoRenew,
+            $successUrl ?? env('APP_URL') . '/success',
+            $cancelUrl ?? env('APP_URL') . '/cancel'
+        );
     }
 
     /**
@@ -89,15 +64,13 @@ class Stripe
      */
     public function createPrice($price, $currency = 'gbp', $productName = 'Gold Plan', $interval = 'month', $intervalCount = 1)
     {
-        return $this->stripe->prices->create([
-            'currency' => strtolower($currency),
-            'unit_amount' => (int)($price * 100), // Convert to smallest currency unit
-            'recurring' => [
-                'interval' => $interval,
-                'interval_count' => $intervalCount
-            ],
-            'product_data' => ['name' => $productName],
-        ]);
+        return $this->gateway->createSubscriptionPrice(
+            $price,
+            $currency,
+            $productName,
+            $interval,
+            $intervalCount
+        );
     }
 
     /**
@@ -111,20 +84,12 @@ class Stripe
      */
     public function createProduct($name, $imageUrl = null, $isSubscription = false, $description = null)
     {
-        $productData = [
-            'name' => $name,
-            'type' => $isSubscription ? 'service' : 'good'
-        ];
-
-        if ($imageUrl) {
-            $productData['images'] = [$imageUrl];
-        }
-
-        if ($description) {
-            $productData['description'] = $description;
-        }
-
-        return $this->stripe->products->create($productData);
+        return $this->gateway->createProduct(
+            $name,
+            $imageUrl,
+            $isSubscription,
+            $description
+        );
     }
 
     /**
@@ -137,11 +102,11 @@ class Stripe
      */
     public function createOneTimePrice($price, $productId, $currency = 'gbp')
     {
-        return $this->stripe->prices->create([
-            'currency' => strtolower($currency),
-            'unit_amount' => (int)($price * 100),
-            'product' => $productId,
-        ]);
+        return $this->gateway->createOneTimePrice(
+            $price,
+            $productId,
+            $currency
+        );
     }
 
     /**
@@ -152,7 +117,7 @@ class Stripe
      */
     public function cancelSubscription($subscriptionId)
     {
-        return $this->stripe->subscriptions->cancel($subscriptionId);
+        return $this->gateway->cancelSubscription($subscriptionId);
     }
 
     /**
@@ -164,10 +129,13 @@ class Stripe
      */
     public function createBillingPortalSession($customerId, $returnUrl = null)
     {
-        return $this->stripe->billingPortal->sessions->create([
-            'customer' => $customerId,
-            'return_url' => $returnUrl ?? env('APP_URL') . '/account',
-        ]);
+        // Adapt the call format for backward compatibility
+        $user = (object) ['stripe_id' => $customerId];
+
+        return $this->gateway->createBillingPortalSession(
+            $user,
+            $returnUrl
+        );
     }
 
     /**
@@ -178,11 +146,7 @@ class Stripe
      */
     public function getSubscription($subscriptionId)
     {
-        try {
-            return $this->stripe->subscriptions->retrieve($subscriptionId);
-        } catch (Exception $e) {
-            return ['error' => $e->getMessage()];
-        }
+        return $this->gateway->retrieveSubscription($subscriptionId);
     }
 
     /**
@@ -194,61 +158,16 @@ class Stripe
      */
     public function createInvoiceAndMarkAsPaid($sessionId, $order)
     {
-        try {
-            // Retrieve checkout session
-            $session = $this->stripe->checkout->sessions->retrieve($sessionId);
-
-            // Create initial invoice
-            $invoice = $this->stripe->invoices->create([
-                'customer' => $session->customer,
-                'auto_advance' => false,
-            ]);
-
-            // Add items to invoice
-            $this->addItemsToInvoice($invoice->id, $session->customer, $order->orderItems);
-
-            // Finalize and mark invoice as paid
-            $finalizedInvoice = $this->stripe->invoices->finalizeInvoice($invoice->id);
-            $paidInvoice = $this->stripe->invoices->update($finalizedInvoice->id, [
-                'paid' => true
-            ]);
-
-            return [
-                'invoice_url' => $paidInvoice->hosted_invoice_url,
-                'invoice_id' => $paidInvoice->id,
-                'amount_paid' => $paidInvoice->amount_paid,
-            ];
-        } catch (Exception $e) {
-            return ['error' => $e->getMessage()];
-        }
-    }
-
-    public function getStripeClient(): StripeClient
-    {
-        return $this->stripe;
-    }
-
-    public function retrieveSession(string $sessionId)
-    {
-        return $this->stripe->checkout->sessions->retrieve($sessionId);
+        return $this->gateway->createInvoiceAndMarkAsPaid($sessionId, $order);
     }
 
     /**
-     * Add items to an invoice
+     * Get the Stripe client
      *
-     * @param string $invoiceId Stripe invoice ID
-     * @param string $customerId Stripe customer ID
-     * @param array $orderItems Array of order items
+     * @return StripeClient
      */
-    protected function addItemsToInvoice($invoiceId, $customerId, $orderItems)
+    public function getStripeClient(): StripeClient
     {
-        foreach ($orderItems as $item) {
-            $this->stripe->invoiceItems->create([
-                'customer' => $customerId,
-                'price' => $item->item->stripe_price_id,
-                'quantity' => $item->quantity,
-                'invoice' => $invoiceId,
-            ]);
-        }
+        return $this->stripe;
     }
 }

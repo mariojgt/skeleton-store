@@ -15,9 +15,10 @@ abstract class AbstractPaymentGateway implements PaymentGatewayInterface
      * @param mixed $items
      * @param string $sessionId
      */
-    protected function dispatchOrderCreation($user, $items, string $sessionId): void
+    protected function dispatchOrderCreation($user, $items, string $sessionId, ?string $gateway = null): void
     {
-        CreateOrderJob::dispatch($user, $items, $sessionId);
+        $gateway = $gateway ?? $this->getGatewayConfigKey();
+        CreateOrderJob::dispatch($user, $items, $sessionId, $gateway);
     }
 
     /**

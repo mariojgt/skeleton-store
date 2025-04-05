@@ -2,22 +2,28 @@
 
 namespace Skeleton\Store\Gateways;
 
-use Skeleton\Store\Models\Plan;
+use Exception;
+use Stripe\StripeClient;
 use Skeleton\Store\Models\Order;
-use Skeleton\Store\Factory\Stripe;
-use Skeleton\Store\DataStructure\ProductDetail;
+use Skeleton\Store\Contracts\PaymentGatewayInterface;
 
-class StripeGateway extends AbstractPaymentGateway
+/**
+ * Stripe Gateway Implementation
+ *
+ * Handles all Stripe-related operations including checkout sessions, products,
+ * prices, subscriptions, and invoice management.
+ */
+class StripeGateway extends AbstractPaymentGateway implements PaymentGatewayInterface
 {
-    /** @var Stripe */
-    protected $stripeFactory;
+    /** @var StripeClient */
+    protected $client;
 
     /**
-     * Initialize gateway
+     * Initialize Stripe client with API key
      */
     public function __construct()
     {
-        $this->stripeFactory = new Stripe();
+        $this->client = new StripeClient(config('skeletonStore.payment_gateway.stripe.secret_key'));
     }
 
     /**
@@ -31,64 +37,7 @@ class StripeGateway extends AbstractPaymentGateway
     }
 
     /**
-     * Create a product in Stripe
-     *
-     * @param string $name
-     * @param string|null $image
-     * @param bool $isSubscription
-     * @param string|null $description
-     * @return mixed
-     */
-    public function createProduct(string $name, ?string $image = null, bool $isSubscription = false, ?string $description = null)
-    {
-        return $this->stripeFactory->createProduct(
-            $name,
-            $image,
-            $isSubscription,
-            $description
-        );
-    }
-
-    /**
-     * Create a subscription price in Stripe
-     *
-     * @param float $amount
-     * @param string $currency
-     * @param string $productName
-     * @param string $interval
-     * @param int $intervalCount
-     * @return mixed
-     */
-    public function createSubscriptionPrice(float $amount, string $currency, string $productName, string $interval, int $intervalCount)
-    {
-        return $this->stripeFactory->createPrice(
-            $amount,
-            $currency,
-            $productName,
-            $interval,
-            $intervalCount
-        );
-    }
-
-    /**
-     * Create a one-time price in Stripe
-     *
-     * @param float $amount
-     * @param string $productId
-     * @param string $currency
-     * @return mixed
-     */
-    public function createOneTimePrice(float $amount, string $productId, string $currency)
-    {
-        return $this->stripeFactory->createOneTimePrice(
-            $amount,
-            $productId,
-            $currency
-        );
-    }
-
-    /**
-     * Create a checkout session in Stripe
+     * Create a checkout session
      *
      * @param mixed $user
      * @param array $lineItems
@@ -99,23 +48,300 @@ class StripeGateway extends AbstractPaymentGateway
      */
     public function createCheckoutSession($user, array $lineItems, bool $isSubscription, string $successUrl, string $cancelUrl)
     {
-        return $this->stripeFactory->createSession(
-            $user,
-            $lineItems,
-            $isSubscription,
-            $successUrl,
-            $cancelUrl
-        );
+        // Create or retrieve Stripe customer
+        $customer = $this->getOrCreateCustomer($user);
+
+        // Create checkout session
+        return $this->client->checkout->sessions->create([
+            'customer' => $customer,
+            'payment_method_types' => ['card'],
+            'line_items' => $lineItems,
+            'mode' => $isSubscription ? 'subscription' : 'payment',
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'allow_promotion_codes' => true
+        ]);
+    }
+
+    /**
+     * Create a product in the payment gateway
+     *
+     * @param string $name
+     * @param string|null $image
+     * @param bool $isSubscription
+     * @param string|null $description
+     * @return mixed
+     */
+    public function createProduct(string $name, ?string $image = null, bool $isSubscription = false, ?string $description = null)
+    {
+        $productData = [
+            'name' => $name,
+            'type' => $isSubscription ? 'service' : 'good'
+        ];
+
+        if ($image) {
+            $productData['images'] = [$image];
+        }
+
+        if ($description) {
+            $productData['description'] = $description;
+        }
+
+        return $this->client->products->create($productData);
+    }
+
+    /**
+     * Create a subscription price in the payment gateway
+     *
+     * @param float $amount
+     * @param string $currency
+     * @param string $productName
+     * @param string $interval
+     * @param int $intervalCount
+     * @return mixed
+     */
+    public function createSubscriptionPrice(float $amount, string $currency, string $productName, string $interval, int $intervalCount)
+    {
+        return $this->client->prices->create([
+            'currency' => strtolower($currency),
+            'unit_amount' => (int)($amount * 100), // Convert to smallest currency unit
+            'recurring' => [
+                'interval' => $interval,
+                'interval_count' => $intervalCount
+            ],
+            'product_data' => ['name' => $productName],
+        ]);
+    }
+
+    /**
+     * Create a one-time price in the payment gateway
+     *
+     * @param float $amount
+     * @param string $productId
+     * @param string $currency
+     * @return mixed
+     */
+    public function createOneTimePrice(float $amount, string $productId, string $currency)
+    {
+        return $this->client->prices->create([
+            'currency' => strtolower($currency),
+            'unit_amount' => (int)($amount * 100),
+            'product' => $productId,
+        ]);
+    }
+
+    /**
+     * Retrieve a checkout session
+     *
+     * @param string $sessionId
+     * @return mixed
+     */
+    public function retrieveSession(string $sessionId)
+    {
+        return $this->client->checkout->sessions->retrieve($sessionId);
+    }
+
+    /**
+     * Retrieve a subscription
+     *
+     * @param string $subscriptionId
+     * @return mixed
+     */
+    public function retrieveSubscription(string $subscriptionId)
+    {
+        try {
+            return $this->client->subscriptions->retrieve($subscriptionId);
+        } catch (Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Cancel a subscription
+     *
+     * @param string $subscriptionId
+     * @return mixed
+     */
+    public function cancelSubscription(string $subscriptionId)
+    {
+        return $this->client->subscriptions->cancel($subscriptionId);
+    }
+
+    /**
+     * Create an invoice and mark it as paid
+     *
+     * @param string $sessionId
+     * @param Order $order
+     * @return mixed
+     */
+    public function createInvoiceAndMarkAsPaid(string $sessionId, Order $order)
+    {
+        try {
+            // Retrieve checkout session
+            $session = $this->client->checkout->sessions->retrieve($sessionId);
+
+            // Create initial invoice
+            $invoice = $this->client->invoices->create([
+                'customer' => $session->customer,
+                'auto_advance' => false,
+            ]);
+
+            // Add items to invoice
+            $this->addItemsToInvoice($invoice->id, $session->customer, $order->orderItems);
+
+            // Finalize and mark invoice as paid
+            $finalizedInvoice = $this->client->invoices->finalizeInvoice($invoice->id);
+            $paidInvoice = $this->client->invoices->update($finalizedInvoice->id, [
+                'paid' => true
+            ]);
+
+            // Update order with invoice details
+            $order->invoice_id = $paidInvoice->id;
+            $order->invoice_url = $paidInvoice->hosted_invoice_url;
+            $order->save();
+
+            return [
+                'invoice_url' => $paidInvoice->hosted_invoice_url,
+                'invoice_id' => $paidInvoice->id,
+                'amount_paid' => $paidInvoice->amount_paid,
+            ];
+        } catch (Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create a billing portal session
+     *
+     * @param mixed $user
+     * @param string|null $returnUrl
+     * @return mixed
+     */
+    public function createBillingPortalSession($user, ?string $returnUrl = null)
+    {
+        $customerId = $this->getOrCreateCustomer($user);
+
+        return $this->client->billingPortal->sessions->create([
+            'customer' => $customerId,
+            'return_url' => $returnUrl ?? env('APP_URL') . '/account',
+        ]);
+    }
+
+    /**
+     * Get the Stripe client
+     *
+     * @return StripeClient
+     */
+    public function getClient(): StripeClient
+    {
+        return $this->client;
+    }
+
+    /**
+     * Format line items for subscription checkout
+     *
+     * @param mixed $plan
+     * @return array
+     */
+    public function formatSubscriptionLineItems($plan): array
+    {
+        return [[
+            'price' => $plan->gateway_price_id,
+            'quantity' => 1,
+        ]];
+    }
+
+    /**
+     * Format line items for product checkout
+     *
+     * @param array $productDetails
+     * @return array
+     */
+    public function formatProductLineItems(array $productDetails): array
+    {
+        $lineItems = [];
+
+        foreach ($productDetails as $item) {
+            $lineItems[] = [
+                'price' => $item->model->gateway_price_id,
+                'quantity' => $item->quantity,
+            ];
+        }
+
+        return $lineItems;
+    }
+
+    /**
+     * Create or retrieve a customer
+     *
+     * @param mixed $user
+     * @return string
+     */
+    protected function getOrCreateCustomer($user)
+    {
+        // Check if user has a gateway_customer_id for Stripe
+        $gatewayId = null;
+
+        if (method_exists($user, 'getGatewayCustomerId')) {
+            $gatewayId = $user->getGatewayCustomerId('stripe');
+        } elseif (isset($user->gateway_customer_ids) && is_array($user->gateway_customer_ids) && isset($user->gateway_customer_ids['stripe'])) {
+            $gatewayId = $user->gateway_customer_ids['stripe'];
+        } elseif (isset($user->stripe_id)) {
+            $gatewayId = $user->stripe_id;
+        }
+
+        if (!empty($gatewayId)) {
+            return $gatewayId;
+        }
+
+        // Create new customer
+        $customer = $this->client->customers->create([
+            'email' => $user->email,
+        ]);
+
+        // Save customer ID
+        if (method_exists($user, 'setGatewayCustomerId')) {
+            $user->setGatewayCustomerId('stripe', $customer->id);
+        } elseif (isset($user->gateway_customer_ids) && is_array($user->gateway_customer_ids)) {
+            $user->gateway_customer_ids['stripe'] = $customer->id;
+            $user->save();
+        } elseif (isset($user->stripe_id)) {
+            $user->stripe_id = $customer->id;
+            $user->save();
+        }
+
+        return $customer->id;
+    }
+
+    /**
+     * Add items to an invoice
+     *
+     * @param string $invoiceId Stripe invoice ID
+     * @param string $customerId Stripe customer ID
+     * @param array $orderItems Array of order items
+     */
+    protected function addItemsToInvoice($invoiceId, $customerId, $orderItems)
+    {
+        foreach ($orderItems as $item) {
+            $priceId = $item->item->gateway_price_id ?? $item->item->stripe_price_id;
+
+            $this->client->invoiceItems->create([
+                'customer' => $customerId,
+                'price' => $priceId,
+                'quantity' => $item->quantity,
+                'invoice' => $invoiceId,
+            ]);
+        }
     }
 
     /**
      * Process subscription checkout with Stripe
      *
-     * @param Plan $plan
+     * @param \Skeleton\Store\Models\Plan $plan
      * @param mixed $user
      * @return array
      */
-    public function processSubscriptionCheckout(Plan $plan, $user): array
+    public function processSubscriptionCheckout(\Skeleton\Store\Models\Plan $plan, $user): array
     {
         $this->ensurePlanHasGatewayPrice($plan);
 
@@ -129,7 +355,7 @@ class StripeGateway extends AbstractPaymentGateway
             $this->getCancelUrl()
         );
 
-        $productDetail[] = new ProductDetail(
+        $productDetail[] = new \Skeleton\Store\DataStructure\ProductDetail(
             $plan->name,
             $plan->price,
             $plan,
@@ -137,7 +363,7 @@ class StripeGateway extends AbstractPaymentGateway
             [],
         );
 
-        $this->dispatchOrderCreation($user, $productDetail, $session->id);
+        $this->dispatchOrderCreation($user, $productDetail, $session->id, $this->getGatewayConfigKey());
 
         return [
             'session' => $session->url,
@@ -168,7 +394,7 @@ class StripeGateway extends AbstractPaymentGateway
             $this->getCancelUrl()
         );
 
-        $this->dispatchOrderCreation($user, $productDetails, $session->id);
+        $this->dispatchOrderCreation($user, $productDetails, $session->id, $this->getGatewayConfigKey());
 
         return [
             'session' => $session->url,
@@ -176,47 +402,15 @@ class StripeGateway extends AbstractPaymentGateway
     }
 
     /**
-     * Format line items for subscription checkout
-     *
-     * @param Plan $plan
-     * @return array
-     */
-    public function formatSubscriptionLineItems(Plan $plan): array
-    {
-        return [[
-            'price' => $plan->gateway_price_id,
-            'quantity' => 1,
-        ]];
-    }
-
-    /**
-     * Format line items for product checkout
-     *
-     * @param array $productDetails
-     * @return array
-     */
-    public function formatProductLineItems(array $productDetails): array
-    {
-        $lineItems = [];
-
-        foreach ($productDetails as $item) {
-            $lineItems[] = [
-                'price' => $item->model->gateway_price_id,
-                'quantity' => $item->quantity,
-            ];
-        }
-
-        return $lineItems;
-    }
-
-    /**
      * Ensure plan has a price ID in the payment gateway
      *
-     * @param Plan $plan
+     * @param \Skeleton\Store\Models\Plan $plan
      */
-    protected function ensurePlanHasGatewayPrice(Plan $plan): void
+    protected function ensurePlanHasGatewayPrice(\Skeleton\Store\Models\Plan $plan): void
     {
-        if (empty($plan->gateway_price_id)) {
+        $gatewayKey = $this->getGatewayConfigKey();
+
+        if (empty($plan->gateway_price_id) || $plan->payment_gateway !== $gatewayKey) {
             $paymentId = $plan->auto_renew
                 ? $this->createSubscriptionPrice(
                     $plan->price,
@@ -228,7 +422,7 @@ class StripeGateway extends AbstractPaymentGateway
                 : $this->createOneTimePriceForPlan($plan);
 
             $plan->gateway_price_id = $paymentId->id;
-            $plan->payment_gateway = $this->getGatewayConfigKey();
+            $plan->payment_gateway = $gatewayKey;
             $plan->save();
             $plan->refresh();
         }
@@ -237,10 +431,10 @@ class StripeGateway extends AbstractPaymentGateway
     /**
      * Create a one-time price for a plan
      *
-     * @param Plan $plan
+     * @param \Skeleton\Store\Models\Plan $plan
      * @return mixed
      */
-    protected function createOneTimePriceForPlan(Plan $plan)
+    protected function createOneTimePriceForPlan(\Skeleton\Store\Models\Plan $plan)
     {
         $stripeProduct = $this->createProduct(
             $plan->name,
@@ -259,12 +453,14 @@ class StripeGateway extends AbstractPaymentGateway
     /**
      * Ensure product has a price ID in the payment gateway
      *
-     * @param ProductDetail $item
+     * @param \Skeleton\Store\DataStructure\ProductDetail $item
      * @param string|null $mainImage
      */
-    protected function ensureProductHasGatewayPrice(ProductDetail $item, ?string $mainImage = null): void
+    protected function ensureProductHasGatewayPrice(\Skeleton\Store\DataStructure\ProductDetail $item, ?string $mainImage = null): void
     {
-        if (empty($item->model->gateway_price_id)) {
+        $gatewayKey = $this->getGatewayConfigKey();
+
+        if (empty($item->model->gateway_price_id) || $item->model->payment_gateway !== $gatewayKey) {
             $stripeProduct = $this->createProduct(
                 $item->name,
                 $mainImage
@@ -277,43 +473,23 @@ class StripeGateway extends AbstractPaymentGateway
             );
 
             $item->model->gateway_price_id = $paymentId->id;
-            $item->model->payment_gateway = $this->getGatewayConfigKey();
+            $item->model->payment_gateway = $gatewayKey;
             $item->model->save();
             $item->model->refresh();
         }
     }
 
     /**
-     * Retrieve a checkout session from Stripe
+     * Dispatch job to create order
      *
+     * @param mixed $user
+     * @param mixed $items
      * @param string $sessionId
-     * @return mixed
+     * @param string|null $gateway
      */
-    public function retrieveSession(string $sessionId)
+    protected function dispatchOrderCreation($user, $items, string $sessionId, ?string $gateway = null): void
     {
-        return $this->stripeFactory->stripe->checkout->sessions->retrieve($sessionId);
-    }
-
-    /**
-     * Retrieve a subscription from Stripe
-     *
-     * @param string $subscriptionId
-     * @return mixed
-     */
-    public function retrieveSubscription(string $subscriptionId)
-    {
-        return $this->stripeFactory->stripe->subscriptions->retrieve($subscriptionId);
-    }
-
-    /**
-     * Create an invoice and mark it as paid
-     *
-     * @param string $sessionId
-     * @param Order $order
-     * @return mixed
-     */
-    public function createInvoiceAndMarkAsPaid(string $sessionId, Order $order)
-    {
-        return $this->stripeFactory->createInvoiceAndMarkAsPaid($sessionId, $order);
+        $gateway = $gateway ?? $this->getGatewayConfigKey();
+        \Skeleton\Store\Jobs\CreateOrderJob::dispatch($user, $items, $sessionId, $gateway);
     }
 }
