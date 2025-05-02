@@ -64,6 +64,14 @@ class PaymentManagementController extends Controller
             'auto_renew' => false,
         ]);
 
+        activity()
+            ->withProperties([
+                'subscription_id' => $subscription->id,
+                'payment_gateway' => $gatewayName,
+            ])
+            ->performedOn($subscription)
+            ->log('User canceled subscription');
+
         return redirect()->back()->with('success', 'Subscription has been canceled');
     }
 
@@ -89,6 +97,14 @@ class PaymentManagementController extends Controller
 
         // Create billing portal session
         $portal = $gateway->createBillingPortalSession($user, route('home'));
+
+        activity()
+            ->withProperties([
+                'user_id' => $user->id,
+                'payment_gateway' => $gatewayName,
+            ])
+            ->performedOn($user)
+            ->log('User redirected to billing portal');
 
         return json_encode([
             'session' => $portal->url,

@@ -72,6 +72,16 @@ class UserSubscribedToPlan
         ?string $subscriptionId = null,
         ?string $paymentGateway = null
     ) {
+        activity()
+            ->withProperties([
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'payment_gateway' => $paymentGateway,
+                'auto_renew' => $autoRenew,
+                'payment' => $payment,
+            ])
+            ->performedOn($user)
+            ->log('User subscribed to plan');
         $this->user = $user;
         $this->plan = $plan;
         $this->payment = $payment;

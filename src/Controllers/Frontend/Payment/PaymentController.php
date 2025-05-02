@@ -34,6 +34,13 @@ class PaymentController extends Controller
 
         $gateway = PaymentGatewayFactory::create($gatewayName);
 
+        activity()
+            ->withProperties([
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'payment_gateway' => $gatewayName,
+            ])
+            ->log('PaymentController: Processing subscription checkout');
         return $gateway->processSubscriptionCheckout($plan, $user);
     }
 
@@ -56,6 +63,13 @@ class PaymentController extends Controller
 
         $gateway = PaymentGatewayFactory::create($gatewayName);
 
+        activity()
+            ->withProperties([
+                'products' => $validatedData['products'],
+                'user_id' => $user->id,
+                'payment_gateway' => $gatewayName,
+            ])
+            ->log('PaymentController: Processing product checkout');
         return $gateway->processProductCheckout($checkoutItems, $user);
     }
 

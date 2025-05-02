@@ -52,6 +52,19 @@ class SubscribeUserToPlan
 
         // Notify user
         $this->notifyUser($user, $plan);
+
+        activity()
+            ->withProperties([
+                'plan_id' => $plan->id,
+                'subscription_id' => $subscription->id,
+                'payment_gateway' => $paymentGateway,
+                'subscription_status' => SubscriptionStatus::active->value,
+                'auto_renew' => $autoRenew,
+                'payment' => $payment,
+            ])
+            ->performedOn($subscription)
+            ->causedBy($user)
+            ->log('User subscribed to plan');
     }
 
     /**

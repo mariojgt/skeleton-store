@@ -100,6 +100,15 @@ class CreateOrderJob implements ShouldQueue
 
         // Notify the user
         $this->notifyUser();
+
+        activity()
+            ->withProperties([
+                'order_id' => $order->id,
+                'user_id' => $this->user->id,
+                'payment_gateway' => $this->paymentGateway,
+            ])
+            ->performedOn($order)
+            ->log('Order created successfully');
     }
 
     /**

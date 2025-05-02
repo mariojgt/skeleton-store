@@ -54,6 +54,7 @@ class PaymentHandlerMiddleware
      */
     public function handle($request, Closure $next, $guard = 'web')
     {
+
         $sessionId = $request->session_id;
 
         if (empty($sessionId)) {
@@ -62,6 +63,12 @@ class PaymentHandlerMiddleware
 
         // Check if the session has already been processed
         if ($this->isSessionAlreadyProcessed($sessionId)) {
+            activity()
+                ->withProperties([
+                    'session_id' => $sessionId,
+                    'user_id' => auth()->user() ? auth()->user()->id : null,
+                ])
+                ->log('PaymentHandlerMiddleware: Session already processed');
             return redirect()->route('home')->with('error', 'This payment session has already been processed.');
         }
 
@@ -69,6 +76,12 @@ class PaymentHandlerMiddleware
         $order = Order::where('payment_session_id', $sessionId)->first();
 
         if (!$order) {
+            activity()
+                ->withProperties([
+                    'session_id' => $sessionId,
+                    'user_id' => auth()->user() ? auth()->user()->id : null,
+                ])
+                ->log('PaymentHandlerMiddleware: Order not found for session');
             return redirect()->route('home')->with('error', 'Payment session not found.');
         }
 
@@ -78,7 +91,14 @@ class PaymentHandlerMiddleware
 
         $sessionDetails = $gateway->retrieveSession($sessionId);
 
+        // Check if the session is already paid
         if (!$sessionDetails || $sessionDetails->payment_status !== 'paid') {
+            activity()
+                ->withProperties([
+                    'session_id' => $sessionId,
+                    'user_id' => auth()->user() ? auth()->user()->id : null,
+                ])
+                ->log('PaymentHandlerMiddleware: Session not paid');
             return $next($request);
         }
 
@@ -98,6 +118,12 @@ class PaymentHandlerMiddleware
         // Process the order
         OrderPaidJob::dispatch($sessionId);
 
+        activity()
+            ->withProperties([
+                'session_id' => $sessionId,
+                'user_id' => $user->id,
+            ])
+            ->log('PaymentHandlerMiddleware: Payment session processed successfully');
         DB::commit();
 
         return redirect()->route('home')->with('success', 'Payment completed successfully.');

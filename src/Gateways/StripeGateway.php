@@ -490,6 +490,14 @@ class StripeGateway extends AbstractPaymentGateway implements PaymentGatewayInte
     protected function dispatchOrderCreation($user, $items, string $sessionId, ?string $gateway = null): void
     {
         $gateway = $gateway ?? $this->getGatewayConfigKey();
+        activity()
+            ->withProperties([
+                'products' => $items,
+                'user_id' => $user->id,
+                'payment_gateway' => $gateway,
+            ])
+            ->causedBy($user)
+            ->log('Dispatching order creation job');
         \Skeleton\Store\Jobs\CreateOrderJob::dispatch($user, $items, $sessionId, $gateway);
     }
 }

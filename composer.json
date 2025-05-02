@@ -14,7 +14,8 @@
     ],
     "require": {
         "php": "^8.0",
-        "mariojgt/skeleton-admin": "^1.0.2|@dev"
+        "mariojgt/skeleton-admin": "^1.0.2|@dev",
+        "spatie/laravel-activitylog": "^4.10"
     },
     "autoload": {
         "psr-4": {
