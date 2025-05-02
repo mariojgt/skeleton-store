@@ -3,12 +3,12 @@
 namespace Skeleton\Store\Models;
 
 use Carbon\Carbon;
-use App\Models\User;
 use Skeleton\Store\Enums\PriceType;
 use Skeleton\Store\Enums\ProductType;
+use Mariojgt\SkeletonAdmin\Models\User;
 use Skeleton\Store\Enums\SubscriptionStatus;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Subscription extends BaseMasterModel
 {
