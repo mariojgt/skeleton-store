@@ -113,7 +113,7 @@ class OrderPaidJob implements ShouldQueue
                 $user = $order->user;
                 $user = User::find($user->id);
                 // If a Plan, trigger subscription event
-                event(new UserSubscribedToPlan($user, $item->item, []));
+                // event(new UserSubscribedToPlan($user, $item->item, [])); // No need because the PaymentHandlerMiddleware does this
             }
         }
     }

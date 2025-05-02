@@ -7,11 +7,12 @@ use Illuminate\Http\Request;
 use Skeleton\Store\Models\Plan;
 use Skeleton\Store\Models\User;
 use Skeleton\Store\Models\Order;
+use Illuminate\Support\Facades\DB;
+use Skeleton\Store\Jobs\OrderPaidJob;
+use Illuminate\Foundation\Application;
 use Skeleton\Store\Enums\PaymentMethod;
 use Skeleton\Store\Enums\PaymentStatus;
 use Skeleton\Store\Models\PaymentSession;
-use Skeleton\Store\Jobs\OrderPaidJob;
-use Illuminate\Foundation\Application;
 use Mariojgt\GameDev\Jobs\ProcessSubscription;
 use Skeleton\Store\Factory\PaymentGatewayFactory;
 
@@ -71,6 +72,7 @@ class PaymentHandlerMiddleware
             return redirect()->route('home')->with('error', 'Payment session not found.');
         }
 
+        DB::beginTransaction();
         $gatewayName = $order->payment_gateway ?? config('skeletonStore.payment_gateway.default');
         $gateway = PaymentGatewayFactory::create($gatewayName);
 
@@ -95,6 +97,8 @@ class PaymentHandlerMiddleware
 
         // Process the order
         OrderPaidJob::dispatch($sessionId);
+
+        DB::commit();
 
         return redirect()->route('home')->with('success', 'Payment completed successfully.');
     }

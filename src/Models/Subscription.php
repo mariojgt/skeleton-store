@@ -15,7 +15,15 @@ class Subscription extends BaseMasterModel
     use HasFactory;
     use softDeletes;
 
-    protected $fillable = ['user_id', 'plan_id', 'start_date', 'end_date', 'status', 'auto_renew', 'stripe_subscription_id'];
+    protected $fillable = [
+        'user_id',
+        'plan_id',
+        'start_date',
+        'end_date',
+        'status',
+        'auto_renew',
+        'subscription_id'
+    ];
 
     protected $casts = [
         'status'       => SubscriptionStatus::class,

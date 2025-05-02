@@ -191,17 +191,17 @@ class ProductController extends Controller
             'price'                  => 'required | numeric',
             'type'                   => 'required',
             'price_type'             => 'required',
-            'free_with_subscription' => 'required',
+            'free_with_subscription' => 'required'
         ]);
 
-        $product->name        = $data['name'];
-        $product->slug        = $data['slug'];
-        $product->category_id = is_array($data['category_id']) ? $data['category_id'][0]['id'] : $data['category_id'];
-        $product->description = $data['description'];
-        $product->price       = $data['price'];
-        $product->type        = $data['type'];
-        $product->price_type  = $data['price_type'];
-        $product->free_with_subscription  = $data['free_with_subscription'];
+        $product->name                  = $data['name'];
+        $product->slug                  = $data['slug'];
+        $product->category_id           = is_array($data['category_id']) ? $data['category_id'][0]['id'] : $data['category_id'];
+        $product->description           = $data['description'];
+        $product->price                 = $data['price'];
+        $product->type                  = $data['type'];
+        $product->price_type            = $data['price_type'];
+        $product->free_with_subscription = $data['free_with_subscription'];
         $product->save();
 
         // Get all the ids form the $data['course_image']

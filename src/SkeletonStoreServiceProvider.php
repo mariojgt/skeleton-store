@@ -50,6 +50,10 @@ class SkeletonStoreServiceProvider extends ServiceProvider
             \Skeleton\Store\Middleware\PaymentHandlerMiddleware::class
         );
 
+        $this->app['router']->aliasMiddleware(
+            'capability', \Skeleton\Store\Middleware\CheckCapability::class,
+        );
+
         Cache::remember('ecommerceStore', 60 * 60 * 24, function () {
             $configArray = [];
 

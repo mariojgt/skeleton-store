@@ -4,6 +4,8 @@ namespace Skeleton\Store\Listeners;
 
 use Skeleton\Store\Models\Payment;
 use Skeleton\Store\Enums\DurationType;
+use Skeleton\Store\Enums\RestrictionType;
+use Skeleton\Store\Models\CapabilityUsage;
 use Skeleton\Store\Enums\SubscriptionStatus;
 use Skeleton\Store\Events\UserSubscribedToPlan;
 use Mariojgt\SkeletonAdmin\Notifications\GenericNotification;
@@ -44,6 +46,9 @@ class SubscribeUserToPlan
         if (!empty($payment)) {
             $this->createPaymentRecord($subscription, $payment);
         }
+
+        // After creating the subscription, reset capability usage for the new plan
+        $this->resetCapabilityUsage($user, $subscription, $plan);
 
         // Notify user
         $this->notifyUser($user, $plan);
@@ -112,5 +117,59 @@ class SubscribeUserToPlan
                 true
             )
         );
+    }
+
+    /**
+     * Reset capability usage for a new subscription
+     */
+    protected function resetCapabilityUsage($user, $subscription, $plan)
+    {
+        // Get capabilities for this plan with the correct pivot attributes
+        $planCapabilities = $plan->capabilities()->withPivot(['restriction_type', 'usage_limit', 'is_unlimited', 'initial_credits'])->get();
+
+        foreach ($planCapabilities as $capability) {
+            $usage = CapabilityUsage::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'capability_id' => $capability->id,
+                    'subscription_id' => $subscription->id,
+                ],
+                [
+                    'usage_count' => 0,
+                    'last_reset' => now(),
+                ]
+            );
+
+            // Get the restriction type properly
+            $restrictionType = RestrictionType::MONTHLY; // Default to monthly
+
+            if (isset($capability->pivot->restriction_type)) {
+                // Check if it's already a RestrictionType instance
+                if ($capability->pivot->restriction_type instanceof RestrictionType) {
+                    $restrictionType = $capability->pivot->restriction_type;
+                } else {
+                    // If it's a string, convert it to enum
+                    try {
+                        $restrictionType = RestrictionType::from($capability->pivot->restriction_type);
+                    } catch (\ValueError $e) {
+                        // Keep the default monthly if invalid
+                    }
+                }
+            }
+
+            // Set next reset date based on restriction type
+            if ($restrictionType->isTimeBased()) {
+                $usage->next_reset = now()->addDays($restrictionType->getDaysUntilReset());
+            } else {
+                $usage->next_reset = null;
+            }
+
+            // Initialize credits for credit-based capabilities
+            if ($restrictionType === RestrictionType::CREDITS) {
+                $usage->remaining_credits = $capability->pivot->initial_credits ?? 0;
+            }
+
+            $usage->save();
+        }
     }
 }

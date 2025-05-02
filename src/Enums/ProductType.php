@@ -9,5 +9,6 @@ enum ProductType: string
     case digital = 'Digital';
     case physical = 'Physical';
     case service = 'Service';
+    case project_templates = 'Project Templates';
     case other = 'Other';
 }
