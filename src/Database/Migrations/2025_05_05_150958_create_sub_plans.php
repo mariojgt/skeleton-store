@@ -81,7 +81,13 @@ return new class extends Migration
                 'restriction_type' => RestrictionType::MONTHLY->value,
                 'initial_credits' => 0,
             ],
-            // No project templates on basic plan
+            // Limited downloads
+            Capability::where('slug', CapabilityType::DIGITAL_LESSON_RESOURCES->value)->first()->id => [
+                'usage_limit' => 5,
+                'is_unlimited' => false,
+                'restriction_type' => RestrictionType::MONTHLY->value,
+                'initial_credits' => 0,
+            ],
         ]);
 
         // Standard Monthly Plan
@@ -114,6 +120,13 @@ return new class extends Migration
             // Limited project templates
             Capability::where('slug', CapabilityType::PROJECT_TEMPLATES->value)->first()->id => [
                 'usage_limit' => 1,
+                'is_unlimited' => false,
+                'restriction_type' => RestrictionType::MONTHLY->value,
+                'initial_credits' => 0,
+            ],
+            // Limited downloads
+            Capability::where('slug', CapabilityType::DIGITAL_LESSON_RESOURCES->value)->first()->id => [
+                'usage_limit' => 15,
                 'is_unlimited' => false,
                 'restriction_type' => RestrictionType::MONTHLY->value,
                 'initial_credits' => 0,
@@ -154,6 +167,13 @@ return new class extends Migration
                 'restriction_type' => RestrictionType::MONTHLY->value,
                 'initial_credits' => 0,
             ],
+            // Limited downloads
+            Capability::where('slug', CapabilityType::DIGITAL_LESSON_RESOURCES->value)->first()->id => [
+                'usage_limit' => 30,
+                'is_unlimited' => false,
+                'restriction_type' => RestrictionType::MONTHLY->value,
+                'initial_credits' => 0,
+            ],
         ]);
     }
 
@@ -190,6 +210,13 @@ return new class extends Migration
                 'initial_credits' => 0,
             ],
             // No project templates on basic plan
+            // Limited downloads
+            Capability::where('slug', CapabilityType::DIGITAL_LESSON_RESOURCES->value)->first()->id => [
+                'usage_limit' => 60,
+                'is_unlimited' => false,
+                'restriction_type' => RestrictionType::MONTHLY->value,
+                'initial_credits' => 0,
+            ],
         ]);
 
         // Standard Yearly Plan (save 15%)
@@ -226,38 +253,9 @@ return new class extends Migration
                 'restriction_type' => RestrictionType::YEARLY->value,
                 'initial_credits' => 0,
             ],
-        ]);
-
-        // Premium Yearly Plan (save 15%)
-        $premiumYearly = Plan::create([
-            'name' => 'Premium Yearly',
-            'description' => 'Unlimited courses with very generous download and template limits - save 15%',
-            'price' => 305.89, // 29.99 * 12 * 0.85 (15% discount)
-            'duration' => 1,
-            'duration_type' => DurationType::years,
-            'is_active' => true,
-            'auto_renew' => true,
-        ]);
-
-        // Attach capabilities to Premium Yearly Plan
-        $premiumYearly->capabilities()->attach([
-            // Unlimited video courses
-            Capability::where('slug', CapabilityType::PREMIUM_COURSES->value)->first()->id => [
-                'usage_limit' => 0,
-                'is_unlimited' => true,
-                'restriction_type' => RestrictionType::YEARLY->value,
-                'initial_credits' => 0,
-            ],
-            // Very generous downloads but not unlimited
-            Capability::where('slug', CapabilityType::DIGITAL_RESOURCES->value)->first()->id => [
-                'usage_limit' => 350, // More than monthly × 12
-                'is_unlimited' => false,
-                'restriction_type' => RestrictionType::YEARLY->value,
-                'initial_credits' => 0,
-            ],
-            // Very generous template limit
-            Capability::where('slug', CapabilityType::PROJECT_TEMPLATES->value)->first()->id => [
-                'usage_limit' => 20, // More than monthly × 12
+            // Limited downloads
+            Capability::where('slug', CapabilityType::DIGITAL_LESSON_RESOURCES->value)->first()->id => [
+                'usage_limit' => 180, // More than monthly × 12
                 'is_unlimited' => false,
                 'restriction_type' => RestrictionType::YEARLY->value,
                 'initial_credits' => 0,
