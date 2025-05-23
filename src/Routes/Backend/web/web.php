@@ -3,11 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use Skeleton\Store\Controllers\Backend\Plans\PlansController;
 use Skeleton\Store\Controllers\Backend\Product\ProductController;
+use Skeleton\Store\Controllers\Backend\Plans\PlanCapabilityController;
 use Skeleton\Store\Controllers\Backend\Settings\StoreSettingsController;
+use Skeleton\Store\Controllers\Backend\Capabilities\UserCapabilityController;
 use Skeleton\Store\Controllers\Backend\Capabilities\CapabilityController;
 use Skeleton\Store\Controllers\Backend\Product\ProductResourceController;
 use Skeleton\Store\Controllers\Backend\Subscriptions\SubscriptionController;
 use Skeleton\Store\Controllers\Backend\ProductCategory\ProductCategoryController;
+
 
 // Standard
 Route::group([
@@ -29,6 +32,13 @@ Route::group([
         Route::get('/store/plans', 'index')->name('admin.store.plans.index');
     });
 
+    Route::controller(PlanCapabilityController::class)->group(function () {
+        Route::get('/capabilities/{plan}', 'editCapabilities')->name('edit.capabilities');
+        Route::post('{plan}/capabilities', 'updateCapabilities')->name('update.capabilities');
+        Route::post('{plan}/capabilities/store', 'store')->name('capabilities.store');
+        Route::post('{plan}/capabilities/{capability}', 'destroy')->name('capabilities.destroy');
+    });
+
     Route::controller(StoreSettingsController::class)->group(function () {
         Route::get('/store/settings', 'index')->name('admin.store.settings.index');
     });
@@ -46,7 +56,7 @@ Route::group([
         Route::get('/store/subscriptions/search/users', 'searchUsers')->name('admin.store.subscriptions.search-users');
     });
 
-    Route::controller(CapabilityController::class)->group(function () {
+    Route::controller(UserCapabilityController::class)->group(function () {
         // Get all capabilities
         Route::get('/store/capabilities/list', 'list')->name('admin.store.capabilities.list');
         // Get user capabilities for a subscription
@@ -55,6 +65,10 @@ Route::group([
         Route::post('/store/capabilities/add', 'addCapability')->name('admin.store.capabilities.add');
         Route::put('/store/capabilities/{capability}', 'updateCapability')->name('admin.store.capabilities.update');
         Route::delete('/store/capabilities/{capability}', 'removeCapability')->name('admin.store.capabilities.remove');
+    });
+
+    Route::controller(CapabilityController::class)->group(function () {
+        Route::get('/store/capabilities', 'index')->name('admin.store.capabilities.index');
     });
 
     Route::prefix('admin/store/product/{product}/resources')->name('admin.store.product.resources.')->group(function () {

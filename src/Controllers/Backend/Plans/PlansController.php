@@ -11,30 +11,20 @@ use Mariojgt\Builder\Enums\FieldTypes;
 use Skeleton\Store\Enums\DurationType;
 use Mariojgt\Builder\Helpers\FormHelper;
 use Mariojgt\SkeletonAdmin\Enums\PermissionEnum;
+use Mariojgt\SkeletonAdmin\Controllers\Backend\Web\Crud\GenericCrudController;
 
-class PlansController extends Controller
+class PlansController extends GenericCrudController
 {
-    /**
-     * @return [blade view]
-     */
-    public function index()
+    public function __construct()
     {
-        // $user = User::find(3);
-        // $plan = Plan::find(2);
-        // event(new UserSubscribedToPlan($user, $plan));
-        // Build the breadcrumb
-        $breadcrumb = [
-            [
-                'label' => 'Plans',
-                'url'   => route('admin.store.plans.index'),
-            ]
-        ];
+        $this->title = 'Plans | Index';
+        $this->model = Plan::class;
+    }
 
-        // Initialize form helper
-        $form = new FormHelper();
-        $formConfig = $form
-            // Add fields
-            ->addIdField()
+    protected function getFormConfig(): FormHelper
+    {
+        return (new FormHelper())
+                ->addIdField()
             ->addField(
                 label: 'Name',
                 key: 'name',
@@ -101,34 +91,9 @@ class PlansController extends Controller
                 singleSearch: true,
                 displayKey: 'name'
             )
-            // Set endpoints
-            ->setEndpoints(
-                listEndpoint: route('admin.api.generic.table'),
-                deleteEndpoint: route('admin.api.generic.table.delete'),
-                createEndpoint: route('admin.api.generic.table.create'),
-                editEndpoint: route('admin.api.generic.table.update')
-            )
-            // Set model
-            ->setModel(Plan::class)
-            // Set permissions
-            ->setPermissions(
-                guard: 'skeleton_admin',
-                type: 'permission',
-                permissions: [
-                    'store'  => PermissionEnum::CreatePermission->value,
-                    'update' => PermissionEnum::EditPermission->value,
-                    'delete' => PermissionEnum::DeletePermission->value,
-                    'index'  => PermissionEnum::ReadPermission->value,
-                ]
-            )
-            ->build();
-
-        return Inertia::render('BackEnd/Vendor/skeleton-store/plans/index', [
-            'title'      => 'Plans',
-            'table_name' => 'Plans',
-            'breadcrumb' => $breadcrumb,
-            // Required for the generic builder table api
-            ...$formConfig
-        ]);
+            ->setCustomPointRoute(
+                route: '/admin/capabilities/',
+                customActionName: 'Capabilities',
+            );
     }
 }

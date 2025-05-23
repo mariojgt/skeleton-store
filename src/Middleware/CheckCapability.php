@@ -41,7 +41,7 @@ class CheckCapability
             $capabilityType = CapabilityType::from($capability);
         } catch (\ValueError $e) {
             // Invalid capability
-            abort(500, 'Invalid capability configuration');
+            abort(403, 'You don\'t have permission to access this page.');
         }
 
         // Check if user has capability

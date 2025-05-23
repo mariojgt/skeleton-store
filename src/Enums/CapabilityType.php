@@ -8,6 +8,7 @@ enum CapabilityType: string
     case DIGITAL_LESSON_RESOURCES = 'download_digital_lesson_resources';
     case DIGITAL_RESOURCES = 'download_digital_resources';
     case PROJECT_TEMPLATES = 'project_templates';
+    case AI_GENERATION = 'ai_generation';
 
     /**
      * Get a readable name for the capability
@@ -18,7 +19,8 @@ enum CapabilityType: string
             self::PREMIUM_COURSES => 'Premium Courses',
             self::DIGITAL_LESSON_RESOURCES => 'Digital Lesson Resources',
             self::DIGITAL_RESOURCES => 'Digital Resources',
-            self::PROJECT_TEMPLATES => 'Project Templates'
+            self::PROJECT_TEMPLATES => 'Project Templates',
+            self::AI_GENERATION => 'AI Generation',
         };
     }
 
@@ -31,7 +33,8 @@ enum CapabilityType: string
             self::PREMIUM_COURSES => 'Access to premium video courses and training materials',
             self::DIGITAL_LESSON_RESOURCES => 'Download lesson plans, worksheets, and other teaching resources',
             self::DIGITAL_RESOURCES => 'Download ebooks, templates, and other digital resources',
-            self::PROJECT_TEMPLATES => 'Ready-to-use project templates and starters'
+            self::PROJECT_TEMPLATES => 'Ready-to-use project templates and starters',
+            self::AI_GENERATION => 'Generate AI content and resources',
         };
     }
 

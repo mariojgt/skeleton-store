@@ -21,6 +21,11 @@ class SkeletonStoreServiceProvider extends ServiceProvider
         ],
     ];
 
+    protected $routeMiddleware = [
+        'subscription' => \Skeleton\Store\Middleware\PaymentHandlerMiddleware::class,
+        'capability' => \Skeleton\Store\Middleware\CheckCapability::class,
+    ];
+
     /**
      * Bootstrap the application services.
      *
@@ -44,16 +49,6 @@ class SkeletonStoreServiceProvider extends ServiceProvider
         // Load Migrations
         $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations');
 
-        // Load custom middleware
-        $this->app['router']->aliasMiddleware(
-            'subscription',
-            \Skeleton\Store\Middleware\PaymentHandlerMiddleware::class
-        );
-
-        $this->app['router']->aliasMiddleware(
-            'capability', \Skeleton\Store\Middleware\CheckCapability::class,
-        );
-
         Cache::remember('ecommerceStore', 60 * 60 * 24, function () {
             $configArray = [];
 
@@ -74,7 +69,15 @@ class SkeletonStoreServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->registerRouteMiddleware();
         $this->publish();
+    }
+
+    protected function registerRouteMiddleware()
+    {
+        foreach ($this->routeMiddleware as $key => $middleware) {
+            $this->app['router']->aliasMiddleware($key, $middleware);
+        }
     }
 
     public function publish()
